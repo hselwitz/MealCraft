@@ -31,7 +31,7 @@ export function LeftoverTracker() {
     };
 
     const handleGetSuggestions = async () => {
-        const result = await getSuggestions.mutateAsync();
+        const result = await getSuggestions.mutateAsync([]);
         setSuggestions(result.suggestions);
         setShowSuggestions(true);
     };

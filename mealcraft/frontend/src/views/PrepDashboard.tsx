@@ -19,8 +19,8 @@ export function PrepDashboard() {
     const [storedTasks, setStoredTasks] = useLocalStorage<{ planId: string; tasks: string[] } | null>(
         "mealcraft:prep-tasks", null
     );
-    const prepPlan = storedPrep?.planId === activePlan?.id ? storedPrep.plan : null;
-    const completedTaskNames = storedTasks?.planId === activePlan?.id ? storedTasks.tasks : [];
+    const prepPlan = storedPrep?.planId === activePlan?.id ? storedPrep?.plan ?? null : null;
+    const completedTaskNames = storedTasks?.planId === activePlan?.id ? storedTasks?.tasks ?? [] : [];
     const completedTasks = new Set(completedTaskNames);
 
     const handleGenerate = async () => {
