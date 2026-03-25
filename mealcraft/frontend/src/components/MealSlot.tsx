@@ -47,12 +47,14 @@ export function MealSlotCard({
                 setDroppableRef(el);
             }}
             className={[
-                "relative rounded-lg border transition-all min-h-[80px] p-2 text-xs",
+                "relative rounded-lg border transition-all min-h-[80px] text-xs",
+                slot.status === "skipped" ? "p-0 cursor-pointer" : "p-2",
                 statusColors[slot.status] ?? "bg-white",
                 isDragging ? "opacity-50 shadow-lg scale-95" : "",
                 isOver ? "ring-2 ring-primary-400 border-primary-300" : "border-gray-200",
                 isLoading ? "animate-pulse" : "",
             ].join(" ")}
+            onClick={slot.status === "skipped" ? () => onStatusChange(slot.id, "planned") : undefined}
             {...attributes}
         >
             {slot.recipe ? (
@@ -96,12 +98,9 @@ export function MealSlotCard({
                     <span>Eating out</span>
                 </div>
             ) : slot.status === "skipped" ? (
-                <button
-                    className="w-full h-full flex items-center justify-center text-gray-300 hover:text-primary-400 transition-colors"
-                    onClick={() => onStatusChange(slot.id, "planned")}
-                >
+                <div className="absolute inset-0 flex items-center justify-center text-gray-300 hover:text-primary-400 transition-colors">
                     <span className="text-xl font-light leading-none">+</span>
-                </button>
+                </div>
             ) : (
                 <div className="text-gray-400 italic" {...listeners}>No meal planned</div>
             )}
