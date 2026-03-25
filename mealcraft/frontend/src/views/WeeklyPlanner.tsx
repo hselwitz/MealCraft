@@ -1,6 +1,6 @@
 import {useState} from "react";
 import {closestCenter, DndContext, DragEndEvent} from "@dnd-kit/core";
-import {ChevronLeft, ChevronRight, Plus, Wand2} from "lucide-react";
+import {CalendarDays, ChevronLeft, ChevronRight, Plus, Wand2} from "lucide-react";
 import {useCreatePlan, usePlan, usePlans, useRegenerateSlot, useUpdateSlot} from "@/hooks/useApi";
 import {apiPostStream} from "@/api/client";
 import {useSettings} from "@/hooks/useSettings";
@@ -12,6 +12,7 @@ import {useQueryClient} from "@tanstack/react-query";
 
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const TODAY = new Date().toISOString().split("T")[0];
 
 function getWeekDates(startDate: Date): string[] {
     const dates: string[] = [];
@@ -229,17 +230,27 @@ export function WeeklyPlanner() {
                         <thead>
                         <tr>
                             <th className="w-20 p-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Meal</th>
-                            {weekDates.map((date, i) => (
-                                <th key={date} className="p-2 text-center min-w-[130px]">
-                                    <div className="text-xs font-medium text-gray-500 uppercase">{DAY_LABELS[i]}</div>
-                                    <div className="text-sm font-semibold text-gray-800">
-                                        {new Date(date + "T12:00:00").toLocaleDateString("en-US", {
-                                            month: "short",
-                                            day: "numeric"
-                                        })}
-                                    </div>
-                                </th>
-                            ))}
+                            {weekDates.map((date, i) => {
+                                const isToday = date === TODAY;
+                                return (
+                                    <th key={date} className="p-2 text-center min-w-[130px]">
+                                        <div className={`text-xs font-medium uppercase ${isToday ? "text-primary-600" : "text-gray-500"}`}>
+                                            {DAY_LABELS[i]}
+                                        </div>
+                                        <div className={`text-sm font-semibold ${isToday ? "text-primary-700" : "text-gray-800"}`}>
+                                            {new Date(date + "T12:00:00").toLocaleDateString("en-US", {
+                                                month: "short",
+                                                day: "numeric",
+                                            })}
+                                        </div>
+                                        {isToday && (
+                                            <div className="flex justify-center mt-0.5">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-primary-500 inline-block"/>
+                                            </div>
+                                        )}
+                                    </th>
+                                );
+                            })}
                         </tr>
                         </thead>
                         <tbody>
@@ -278,24 +289,30 @@ export function WeeklyPlanner() {
                 <div className="flex gap-1 overflow-x-auto pb-1 -mx-4 px-4">
                     {weekDates.map((date, i) => {
                         const hasRecipe = MEAL_TYPES.some((mt) => getSlot(date, mt)?.recipe);
+                        const isToday = date === TODAY;
+                        const isSelected = selectedDayIndex === i;
                         return (
                             <button
                                 key={date}
                                 onClick={() => setSelectedDayIndex(i)}
                                 className={[
                                     "flex-shrink-0 flex flex-col items-center px-3 py-2 rounded-xl text-xs font-medium transition-colors",
-                                    selectedDayIndex === i
+                                    isSelected
                                         ? "bg-primary-600 text-white"
-                                        : "bg-gray-100 text-gray-600",
+                                        : isToday
+                                            ? "bg-primary-50 text-primary-700 ring-1 ring-primary-300"
+                                            : "bg-gray-100 text-gray-600",
                                 ].join(" ")}
                             >
                                 <span>{DAY_LABELS[i]}</span>
                                 <span className="font-semibold">
                                     {new Date(date + "T12:00:00").toLocaleDateString("en-US", {day: "numeric"})}
                                 </span>
-                                {hasRecipe && (
-                                    <span
-                                        className={`w-1.5 h-1.5 rounded-full mt-1 ${selectedDayIndex === i ? "bg-white/60" : "bg-primary-400"}`}/>
+                                {(hasRecipe || isToday) && (
+                                    <span className={[
+                                        "w-1.5 h-1.5 rounded-full mt-1",
+                                        isSelected ? "bg-white/60" : isToday ? "bg-primary-400" : "bg-primary-300",
+                                    ].join(" ")}/>
                                 )}
                             </button>
                         );
@@ -328,7 +345,32 @@ export function WeeklyPlanner() {
             </div>
 
             {planLoading && !plan && (
-                <div className="text-center py-8 text-gray-400 text-sm">Loading plan...</div>
+                <div className="hidden sm:grid grid-cols-8 gap-1.5 animate-pulse">
+                    <div/>
+                    {Array.from({length: 7}).map((_, i) => (
+                        <div key={i} className="space-y-1.5">
+                            {Array.from({length: 4}).map((_, j) => (
+                                <div key={j} className="h-20 rounded-lg bg-gray-100"/>
+                            ))}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {!planLoading && !plan && (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mb-4">
+                        <CalendarDays size={32} className="text-primary-400"/>
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-800 mb-1">No plan for this week</h2>
+                    <p className="text-sm text-gray-500 mb-6 max-w-xs">
+                        Create a week to start planning meals, then generate recipes with AI.
+                    </p>
+                    <Button onClick={handleCreateWeek} loading={createPlan.isPending} className="flex items-center gap-2">
+                        <Plus size={16}/>
+                        Create this week
+                    </Button>
+                </div>
             )}
 
             {generating && (

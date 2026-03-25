@@ -5,6 +5,7 @@ import type {RecipeSummary} from "@/types";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {RecipeCard} from "@/components/RecipeCard";
+import {RecipeCardSkeleton} from "@/components/ui/skeleton";
 
 export function RecipesList() {
     const {data: recipes, isLoading} = useRecipes();
@@ -76,12 +77,6 @@ export function RecipesList() {
                 </div>
             )}
 
-            {isLoading && (
-                <div className="flex items-center justify-center py-16">
-                    <div className="animate-spin text-4xl">⏳</div>
-                </div>
-            )}
-
             {!isLoading && recipes?.length === 0 && (
                 <div className="text-center py-16 text-gray-400">
                     <BookOpen size={48} className="mx-auto mb-3 opacity-30"/>
@@ -91,9 +86,12 @@ export function RecipesList() {
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {recipes?.map((recipe) => (
-                    <RecipeCard key={recipe.id} recipe={recipe as unknown as RecipeSummary}/>
-                ))}
+                {isLoading
+                    ? Array.from({length: 6}).map((_, i) => <RecipeCardSkeleton key={i}/>)
+                    : recipes?.map((recipe) => (
+                        <RecipeCard key={recipe.id} recipe={recipe as unknown as RecipeSummary}/>
+                    ))
+                }
             </div>
         </div>
     );

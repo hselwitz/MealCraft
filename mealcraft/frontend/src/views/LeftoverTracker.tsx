@@ -1,5 +1,6 @@
 import {useState} from "react";
 import {AlertTriangle, CheckCircle, Lightbulb, Refrigerator, Trash2} from "lucide-react";
+import {LeftoverCardSkeleton} from "@/components/ui/skeleton";
 import {useLeftovers, useLeftoverSuggestions, useUpdateLeftover} from "@/hooks/useApi";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
@@ -93,8 +94,8 @@ export function LeftoverTracker() {
             )}
 
             {isLoading && (
-                <div className="flex items-center justify-center py-16">
-                    <div className="animate-spin text-4xl">⏳</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Array.from({length: 3}).map((_, i) => <LeftoverCardSkeleton key={i}/>)}
                 </div>
             )}
 

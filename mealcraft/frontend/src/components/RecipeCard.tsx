@@ -14,14 +14,21 @@ const difficultyVariant = {
     hard: "red" as const,
 };
 
+const difficultyStrip = {
+    easy: "bg-green-400",
+    medium: "bg-yellow-400",
+    hard: "bg-red-400",
+};
+
 export function RecipeCard({recipe}: RecipeCardProps) {
     const navigate = useNavigate();
 
     return (
         <Card
             onClick={() => navigate(`/recipes/${recipe.id}`)}
-            className="hover:shadow-md transition-shadow"
+            className="hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
         >
+            <div className={`h-1 ${difficultyStrip[recipe.difficulty] ?? "bg-gray-300"}`}/>
             <CardBody>
                 <h3 className="font-semibold text-gray-900 line-clamp-2 mb-1">{recipe.title}</h3>
                 <p className="text-sm text-gray-500 line-clamp-2 mb-2">{recipe.description}</p>

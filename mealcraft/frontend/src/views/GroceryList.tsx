@@ -1,5 +1,6 @@
 import {useState} from "react";
 import {CheckCircle2, ShoppingCart} from "lucide-react";
+import {GroceryListSkeleton} from "@/components/ui/skeleton";
 import {useGenerateGroceryList, useGroceryList, usePlans, useToggleGroceryItem} from "@/hooks/useApi";
 import {useLocalStorage} from "@/hooks/useLocalStorage";
 import {useSettings} from "@/hooks/useSettings";
@@ -117,11 +118,7 @@ export function GroceryList() {
                 </div>
             )}
 
-            {isLoading && (
-                <div className="flex items-center justify-center py-16">
-                    <div className="animate-spin text-4xl">⏳</div>
-                </div>
-            )}
+            {isLoading && <GroceryListSkeleton/>}
 
             {groceryList && (
                 <>
