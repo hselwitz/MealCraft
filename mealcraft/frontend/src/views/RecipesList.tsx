@@ -1,6 +1,6 @@
 import {useState} from "react";
-import {BookOpen, Wand2} from "lucide-react";
-import {useGenerateRecipe, useRecipes} from "@/hooks/useApi";
+import {BookOpen, Trash2, Wand2} from "lucide-react";
+import {useDeleteRecipe, useGenerateRecipe, usePlan, usePlans, useRecipes} from "@/hooks/useApi";
 import type {RecipeSummary} from "@/types";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
@@ -9,10 +9,22 @@ import {RecipeCardSkeleton} from "@/components/ui/skeleton";
 
 export function RecipesList() {
     const {data: recipes, isLoading} = useRecipes();
+    const {data: plans} = usePlans();
     const generateRecipe = useGenerateRecipe();
+    const deleteRecipe = useDeleteRecipe();
+    const [showAll, setShowAll] = useState(false);
     const [showGenerateForm, setShowGenerateForm] = useState(false);
     const [concept, setConcept] = useState("");
     const [restrictions, setRestrictions] = useState("");
+
+    const activePlan = plans?.find((p) => p.status === "active" || p.status === "draft");
+    const {data: plan} = usePlan(activePlan?.id);
+
+    const planRecipeIds = new Set(
+        plan?.slots.map((s) => s.recipe_id).filter(Boolean) ?? []
+    );
+
+    const visibleRecipes = showAll ? recipes : recipes?.filter((r) => planRecipeIds.has(r.id));
 
     const handleGenerate = async () => {
         if (!concept.trim()) return;
@@ -29,26 +41,42 @@ export function RecipesList() {
         setShowGenerateForm(false);
     };
 
+    const handleDelete = async (id: string, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        await deleteRecipe.mutateAsync(id);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Recipes</h1>
                     <p className="text-sm text-gray-500 mt-1">
-                        {recipes?.length ?? 0} recipe{recipes?.length !== 1 ? "s" : ""} saved
+                        {visibleRecipes?.length ?? 0} recipe{visibleRecipes?.length !== 1 ? "s" : ""}
+                        {!showAll && ` in current plan`}
                     </p>
                 </div>
 
-                <Button
-                    onClick={() => setShowGenerateForm(!showGenerateForm)}
-                    className="flex items-center gap-2"
-                >
-                    <Wand2 size={16}/>
-                    Generate Recipe
-                </Button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowAll((v) => !v)}
+                        className={[
+                            "text-sm px-3 py-1.5 rounded-lg border transition-colors",
+                            showAll
+                                ? "bg-gray-100 border-gray-300 text-gray-700"
+                                : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50",
+                        ].join(" ")}
+                    >
+                        {showAll ? "Current plan" : "All recipes"}
+                    </button>
+                    <Button onClick={() => setShowGenerateForm(!showGenerateForm)} className="flex items-center gap-2">
+                        <Wand2 size={16}/>
+                        Generate Recipe
+                    </Button>
+                </div>
             </div>
 
-            {/* Generate form */}
             {showGenerateForm && (
                 <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3 shadow-sm">
                     <h3 className="font-semibold text-gray-800">Generate New Recipe</h3>
@@ -77,19 +105,35 @@ export function RecipesList() {
                 </div>
             )}
 
-            {!isLoading && recipes?.length === 0 && (
+            {!isLoading && visibleRecipes?.length === 0 && (
                 <div className="text-center py-16 text-gray-400">
                     <BookOpen size={48} className="mx-auto mb-3 opacity-30"/>
-                    <p>No recipes yet.</p>
-                    <p className="text-sm mt-1">Generate a meal plan or create individual recipes.</p>
+                    {showAll
+                        ? <p>No recipes yet.</p>
+                        : <><p>No recipes in your current plan.</p>
+                            <button onClick={() => setShowAll(true)} className="text-sm text-primary-500 mt-1 hover:underline">
+                                Browse all recipes
+                            </button></>
+                    }
                 </div>
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {isLoading
                     ? Array.from({length: 6}).map((_, i) => <RecipeCardSkeleton key={i}/>)
-                    : recipes?.map((recipe) => (
-                        <RecipeCard key={recipe.id} recipe={recipe as unknown as RecipeSummary}/>
+                    : visibleRecipes?.map((recipe) => (
+                        <div key={recipe.id} className="relative group">
+                            <RecipeCard recipe={recipe as unknown as RecipeSummary}/>
+                            {showAll && !planRecipeIds.has(recipe.id) && (
+                                <button
+                                    onClick={(e) => handleDelete(recipe.id, e)}
+                                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/90 text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all shadow-sm"
+                                    title="Delete recipe"
+                                >
+                                    <Trash2 size={14}/>
+                                </button>
+                            )}
+                        </div>
                     ))
                 }
             </div>

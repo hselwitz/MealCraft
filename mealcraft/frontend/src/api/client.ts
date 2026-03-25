@@ -63,6 +63,18 @@ export async function apiPut<T>(path: string, body?: unknown): Promise<T> {
     return handleResponse<T>(res);
 }
 
+export async function apiDelete(path: string): Promise<void> {
+    const res = await fetch(`${BASE_URL}${path}`, {method: "DELETE"});
+    if (!res.ok && res.status !== 204) {
+        let detail = `HTTP ${res.status}`;
+        try {
+            const body = await res.json();
+            detail = body.detail || detail;
+        } catch { /* ignore */ }
+        throw new ApiError(res.status, detail);
+    }
+}
+
 export function apiStream(path: string, body?: unknown): EventSource {
     // For SSE with POST, we need to use fetch with streaming
     // Return a custom EventSource-like object

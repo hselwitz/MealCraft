@@ -1,4 +1,4 @@
-import {apiGet, apiPost} from "./client";
+import {apiDelete, apiGet, apiPost} from "./client";
 import type {GenerateRecipeRequest, Recipe} from "@/types";
 
 export const recipesApi = {
@@ -8,4 +8,6 @@ export const recipesApi = {
     get: (id: string) => apiGet<Recipe>(`/recipes/${id}`),
 
     generate: (body: GenerateRecipeRequest) => apiPost<Recipe>("/recipes/generate", body),
+
+    delete: (id: string) => apiDelete(`/recipes/${id}`),
 };

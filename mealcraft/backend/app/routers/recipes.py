@@ -96,6 +96,20 @@ async def get_recipe(recipe_id: str, db: AsyncSession = Depends(get_db)):
     return _recipe_to_out(recipe)
 
 
+@router.delete("/{recipe_id}", status_code=204)
+async def delete_recipe(recipe_id: str, db: AsyncSession = Depends(get_db)):
+    from app.models.meal_plan import MealSlot
+    # Refuse if any slot still references this recipe
+    linked = await db.execute(select(MealSlot).where(MealSlot.recipe_id == recipe_id).limit(1))
+    if linked.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Recipe is linked to a meal plan slot")
+    recipe = await db.execute(select(Recipe).where(Recipe.id == recipe_id))
+    recipe = recipe.scalar_one_or_none()
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    await db.delete(recipe)
+
+
 @router.post("/generate")
 async def generate_recipe(
     body: RecipeGenerateRequest,

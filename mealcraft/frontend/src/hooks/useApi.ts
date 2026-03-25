@@ -141,6 +141,14 @@ export function useGenerateRecipe() {
     });
 }
 
+export function useDeleteRecipe() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => recipesApi.delete(id),
+        onSuccess: () => qc.invalidateQueries({queryKey: ["recipes"]}),
+    });
+}
+
 // ─── Leftovers ───────────────────────────────────────────────────────────────
 
 export function useLeftovers(status?: string) {
