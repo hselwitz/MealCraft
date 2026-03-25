@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \":*)",
+      "Bash(mkdir -p /c/Users/Harrison/PycharmProjects/MealCraft/mealcraft/backend/app/models)",
+      "Bash(mkdir -p /c/Users/Harrison/PycharmProjects/MealCraft/mealcraft/backend/app/schemas)",
+      "Bash(mkdir -p /c/Users/Harrison/PycharmProjects/MealCraft/mealcraft/backend/app/llm/prompts)",
+      "Bash(mkdir -p /c/Users/Harrison/PycharmProjects/MealCraft/mealcraft/backend/app/routers)",
+      "Bash(mkdir -p /c/Users/Harrison/PycharmProjects/MealCraft/mealcraft/backend/app/services)"
+    ]
+  }
+}
