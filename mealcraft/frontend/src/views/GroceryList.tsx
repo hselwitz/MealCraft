@@ -1,7 +1,9 @@
+import {useState} from "react";
 import {CheckCircle2, ShoppingCart} from "lucide-react";
 import {useGenerateGroceryList, useGroceryList, usePlans, useToggleGroceryItem} from "@/hooks/useApi";
 import {useLocalStorage} from "@/hooks/useLocalStorage";
 import {useSettings} from "@/hooks/useSettings";
+import {AmazonFreshModal} from "@/components/AmazonFreshModal";
 import type {GroceryItem, StoreSection} from "@/types";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
@@ -64,8 +66,11 @@ export function GroceryList() {
         {}
     );
 
+    const [showAmazon, setShowAmazon] = useState(false);
+
     const checkedCount = groceryList?.items.filter((i) => i.checked).length ?? 0;
     const totalCount = groceryList?.items.length ?? 0;
+    const uncheckedCount = totalCount - checkedCount;
 
     return (
         <div className="space-y-6">
@@ -79,15 +84,30 @@ export function GroceryList() {
                     )}
                 </div>
 
-                <Button
-                    onClick={handleGenerate}
-                    loading={generateList.isPending}
-                    disabled={!activePlan}
-                    className="flex items-center gap-2"
-                >
-                    <ShoppingCart size={16}/>
-                    Generate List
-                </Button>
+                <div className="flex items-center gap-2">
+                    {uncheckedCount > 0 && (
+                        <button
+                            onClick={() => setShowAmazon(true)}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors"
+                        >
+                            <ShoppingCart size={15}/>
+                            Shop on Amazon Fresh
+                            <span className="bg-orange-400 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                                {uncheckedCount}
+                            </span>
+                        </button>
+                    )}
+                    <Button
+                        onClick={handleGenerate}
+                        loading={generateList.isPending}
+                        disabled={!activePlan}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                    >
+                        <ShoppingCart size={16}/>
+                        {groceryList ? "Regenerate" : "Generate List"}
+                    </Button>
+                </div>
             </div>
 
             {!activePlan && (
@@ -191,6 +211,14 @@ export function GroceryList() {
                         </div>
                     )}
                 </>
+            )}
+
+            {showAmazon && groceryList && (
+                <AmazonFreshModal
+                    items={groceryList.items}
+                    onClose={() => setShowAmazon(false)}
+                    onCheck={(item) => handleToggle(item)}
+                />
             )}
         </div>
     );
