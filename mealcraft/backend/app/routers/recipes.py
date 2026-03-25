@@ -1,4 +1,5 @@
 """Recipes router."""
+
 import logging
 from typing import Optional
 
@@ -111,6 +112,7 @@ async def generate_recipe(
     }
 
     if "text/event-stream" in accept:
+
         async def _stream():
             async for chunk in llm.generate_recipe_stream(body.concept, constraints):
                 yield chunk
@@ -124,6 +126,7 @@ async def generate_recipe(
 
     # Non-streaming: generate and save
     from app.services.planner import PlannerService
+
     planner = PlannerService(db, llm)
     recipe = await planner._generate_and_save_recipe(body.concept, constraints)
 

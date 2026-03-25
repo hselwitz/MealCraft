@@ -14,7 +14,8 @@ export function NavBar() {
     return (
         <>
             {/* ── Desktop top nav ── */}
-            <nav className="hidden sm:block fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+            <nav
+                className="hidden sm:block fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
                     <div className="flex items-center gap-2">
                         <span className="text-2xl">🍽</span>
@@ -44,13 +45,15 @@ export function NavBar() {
             </nav>
 
             {/* ── Mobile top bar (logo only) ── */}
-            <div className="sm:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 h-12 flex items-center px-4">
+            <div
+                className="sm:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 h-12 flex items-center px-4">
                 <span className="text-xl mr-2">🍽</span>
                 <span className="font-bold text-base text-primary-700">MealCraft</span>
             </div>
 
             {/* ── Mobile bottom tab bar ── */}
-            <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 safe-area-bottom">
+            <nav
+                className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 safe-area-bottom">
                 <div className="grid grid-cols-6 h-16">
                     {navItems.map(({to, label, icon: Icon}) => (
                         <NavLink

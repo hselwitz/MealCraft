@@ -1,4 +1,5 @@
 """Leftovers router."""
+
 import logging
 from typing import Optional
 
@@ -6,7 +7,12 @@ from app.db import get_db
 from app.llm.client import get_llm_client, LLMClient
 from app.models.leftover import Leftover
 from app.models.recipe import Recipe
-from app.schemas.leftover import LeftoverCreate, LeftoverOut, LeftoverUpdate, LeftoverSuggestionRequest
+from app.schemas.leftover import (
+    LeftoverCreate,
+    LeftoverOut,
+    LeftoverUpdate,
+    LeftoverSuggestionRequest,
+)
 from app.services.leftover import LeftoverService
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -19,9 +25,7 @@ logger = logging.getLogger(__name__)
 
 async def _load_leftover(leftover_id: str, db: AsyncSession) -> Leftover:
     result = await db.execute(
-        select(Leftover)
-        .where(Leftover.id == leftover_id)
-        .options(selectinload(Leftover.recipe))
+        select(Leftover).where(Leftover.id == leftover_id).options(selectinload(Leftover.recipe))
     )
     lv = result.scalar_one_or_none()
     if not lv:
@@ -34,11 +38,7 @@ async def list_leftovers(
     status: Optional[str] = Query("available"),
     db: AsyncSession = Depends(get_db),
 ):
-    query = (
-        select(Leftover)
-        .options(selectinload(Leftover.recipe))
-        .order_by(Leftover.expiry_date)
-    )
+    query = select(Leftover).options(selectinload(Leftover.recipe)).order_by(Leftover.expiry_date)
     if status:
         query = query.where(Leftover.status == status)
     result = await db.execute(query)

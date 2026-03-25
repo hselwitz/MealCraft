@@ -1,26 +1,30 @@
 import {useState} from "react";
 import {CheckCircle2, Settings2, X} from "lucide-react";
-import {useSettings, DEFAULT_SETTINGS, type AppSettings} from "@/hooks/useSettings";
+import {type AppSettings, DEFAULT_SETTINGS, useSettings} from "@/hooks/useSettings";
 import {Button} from "@/components/ui/button";
 import {Card, CardBody, CardHeader} from "@/components/ui/card";
 
-const DIFFICULTY_OPTIONS: {value: AppSettings["maxDifficulty"]; label: string; desc: string}[] = [
+const DIFFICULTY_OPTIONS: { value: AppSettings["maxDifficulty"]; label: string; desc: string }[] = [
     {value: "easy", label: "Easy", desc: "Simple techniques, minimal prep, 30 min or less"},
     {value: "medium", label: "Medium", desc: "Some skill required, up to 45 min active time"},
     {value: "hard", label: "Hard", desc: "Advanced techniques, longer prep allowed"},
 ];
 
-const OVERLAP_OPTIONS: {value: AppSettings["ingredientOverlap"]; label: string; desc: string}[] = [
-    {value: "low", label: "Variety", desc: "Different ingredients each day — more interesting but a longer shopping list"},
+const OVERLAP_OPTIONS: { value: AppSettings["ingredientOverlap"]; label: string; desc: string }[] = [
+    {
+        value: "low",
+        label: "Variety",
+        desc: "Different ingredients each day — more interesting but a longer shopping list"
+    },
     {value: "medium", label: "Balanced", desc: "~30% overlap — some shared staples with daily variety"},
     {value: "high", label: "Efficient", desc: "Maximize reuse — fewer unique items to buy, shorter shopping list"},
 ];
 
 function TagInput({
-    values,
-    onChange,
-    placeholder,
-}: {
+                      values,
+                      onChange,
+                      placeholder,
+                  }: {
     values: string[];
     onChange: (v: string[]) => void;
     placeholder: string;

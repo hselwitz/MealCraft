@@ -2,7 +2,6 @@ import {useState} from "react";
 import {closestCenter, DndContext, DragEndEvent} from "@dnd-kit/core";
 import {ChevronLeft, ChevronRight, Plus, Wand2} from "lucide-react";
 import {useCreatePlan, usePlan, usePlans, useRegenerateSlot, useUpdateSlot} from "@/hooks/useApi";
-import {plansApi} from "@/api/plans";
 import {apiPostStream} from "@/api/client";
 import {useSettings} from "@/hooks/useSettings";
 import type {MealType, SlotStatus} from "@/types";
@@ -91,20 +90,23 @@ export function WeeklyPlanner() {
             await new Promise<void>((resolve, reject) => {
                 apiPostStream(
                     `/plans/${activePlanId}/generate`,
-                    {preferences: {
-                        max_difficulty: settings.maxDifficulty,
-                        ingredient_overlap: settings.ingredientOverlap,
-                        calorie_target: settings.calorieTarget,
-                        household_size: settings.defaultServings,
-                        dietary_restrictions: settings.dietaryRestrictions,
-                        cuisine_preferences: settings.cuisinePreferences,
-                    }},
+                    {
+                        preferences: {
+                            max_difficulty: settings.maxDifficulty,
+                            ingredient_overlap: settings.ingredientOverlap,
+                            calorie_target: settings.calorieTarget,
+                            household_size: settings.defaultServings,
+                            dietary_restrictions: settings.dietaryRestrictions,
+                            cuisine_preferences: settings.cuisinePreferences,
+                        }
+                    },
                     (raw) => {
                         try {
                             const event = JSON.parse(raw);
                             if (event.error) reject(new Error(event.error));
                             else if (event.message) setGenStatus(event.message);
-                        } catch { /* ignore parse errors */ }
+                        } catch { /* ignore parse errors */
+                        }
                     },
                     resolve,
                     reject,
@@ -173,7 +175,8 @@ export function WeeklyPlanner() {
                     {plan && (
                         <p className="text-sm text-gray-500">
                             {plan.name} •{" "}
-                            <Badge variant={plan.status === "active" ? "green" : plan.status === "draft" ? "yellow" : "gray"}>
+                            <Badge
+                                variant={plan.status === "active" ? "green" : plan.status === "draft" ? "yellow" : "gray"}>
                                 {plan.status}
                             </Badge>
                         </p>
@@ -182,24 +185,28 @@ export function WeeklyPlanner() {
 
                 <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1">
-                        <button className="p-1.5 rounded hover:bg-gray-100 text-gray-500" onClick={() => setWeekOffset((o) => o - 1)}>
+                        <button className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
+                                onClick={() => setWeekOffset((o) => o - 1)}>
                             <ChevronLeft size={18}/>
                         </button>
                         <span className="text-sm text-gray-600 min-w-[120px] text-center">
                             {weekDates[0]} – {weekDates[6]}
                         </span>
-                        <button className="p-1.5 rounded hover:bg-gray-100 text-gray-500" onClick={() => setWeekOffset((o) => o + 1)}>
+                        <button className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
+                                onClick={() => setWeekOffset((o) => o + 1)}>
                             <ChevronRight size={18}/>
                         </button>
                     </div>
 
                     {!plan ? (
-                        <Button variant="outline" size="sm" onClick={handleCreateWeek} loading={createPlan.isPending} className="flex items-center gap-1">
+                        <Button variant="outline" size="sm" onClick={handleCreateWeek} loading={createPlan.isPending}
+                                className="flex items-center gap-1">
                             <Plus size={14}/>
                             Create Week
                         </Button>
                     ) : (
-                        <Button size="sm" onClick={handleGeneratePlan} loading={generating} className="flex items-center gap-1">
+                        <Button size="sm" onClick={handleGeneratePlan} loading={generating}
+                                className="flex items-center gap-1">
                             <Wand2 size={14}/>
                             {hasRecipes ? "Regenerate Plan" : "Generate Plan"}
                         </Button>
@@ -208,7 +215,8 @@ export function WeeklyPlanner() {
             </div>
 
             {error && (
-                <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center justify-between">
+                <div
+                    className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center justify-between">
                     <span>{error}</span>
                     <button className="ml-4 text-red-400 hover:text-red-600" onClick={() => setError(null)}>✕</button>
                 </div>
@@ -225,7 +233,10 @@ export function WeeklyPlanner() {
                                 <th key={date} className="p-2 text-center min-w-[130px]">
                                     <div className="text-xs font-medium text-gray-500 uppercase">{DAY_LABELS[i]}</div>
                                     <div className="text-sm font-semibold text-gray-800">
-                                        {new Date(date + "T12:00:00").toLocaleDateString("en-US", {month: "short", day: "numeric"})}
+                                        {new Date(date + "T12:00:00").toLocaleDateString("en-US", {
+                                            month: "short",
+                                            day: "numeric"
+                                        })}
                                     </div>
                                 </th>
                             ))}
@@ -248,7 +259,8 @@ export function WeeklyPlanner() {
                                                     isLoading={regenerateSlot.isPending && regenerateSlot.variables?.slotId === slot.id}
                                                 />
                                             ) : (
-                                                <div className="min-h-[60px] rounded-lg border border-dashed border-gray-200 bg-gray-50"/>
+                                                <div
+                                                    className="min-h-[60px] rounded-lg border border-dashed border-gray-200 bg-gray-50"/>
                                             )}
                                         </td>
                                     );
@@ -282,7 +294,8 @@ export function WeeklyPlanner() {
                                     {new Date(date + "T12:00:00").toLocaleDateString("en-US", {day: "numeric"})}
                                 </span>
                                 {hasRecipe && (
-                                    <span className={`w-1.5 h-1.5 rounded-full mt-1 ${selectedDayIndex === i ? "bg-white/60" : "bg-primary-400"}`}/>
+                                    <span
+                                        className={`w-1.5 h-1.5 rounded-full mt-1 ${selectedDayIndex === i ? "bg-white/60" : "bg-primary-400"}`}/>
                                 )}
                             </button>
                         );
@@ -295,7 +308,8 @@ export function WeeklyPlanner() {
                         const slot = getSlot(weekDates[selectedDayIndex], mealType);
                         return (
                             <div key={mealType}>
-                                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1 px-1">{mealType}</div>
+                                <div
+                                    className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1 px-1">{mealType}</div>
                                 {slot ? (
                                     <MealSlotCard
                                         slot={slot}
@@ -322,8 +336,10 @@ export function WeeklyPlanner() {
                     <div className="bg-white rounded-xl p-6 shadow-xl text-center max-w-sm w-full mx-4">
                         <div className="flex justify-center mb-4">
                             <svg className="animate-spin h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        strokeWidth="4"/>
+                                <path className="opacity-75" fill="currentColor"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                             </svg>
                         </div>
                         <p className="text-gray-800 font-semibold mb-1">Generating your meal plan</p>

@@ -194,7 +194,10 @@ class LLMClient:
                     logger.warning(f"Grocery list validation failed, retrying: {e}")
                     messages += [
                         {"role": "assistant", "content": response.content},
-                        {"role": "user", "content": f"Validation error: {e}. Please retry with the correct schema."},
+                        {
+                            "role": "user",
+                            "content": f"Validation error: {e}. Please retry with the correct schema.",
+                        },
                     ]
                 else:
                     raise
@@ -245,6 +248,7 @@ class LLMClient:
 
         # No match — normalize locally: lowercase, strip prep notes after comma/parens
         import re
+
         canonical = name.strip().lower()
         canonical = re.sub(r"\s*[\(,].*", "", canonical).strip()
         logger.debug(f"Local canonicalization: '{name}' -> '{canonical}'")

@@ -3,8 +3,15 @@ from datetime import datetime, timezone
 
 from app.db import Base
 from sqlalchemy import (
-    VARCHAR, Integer, TIMESTAMP, Text, Enum as SAEnum,
-    ForeignKey, Numeric, JSON, Boolean
+    VARCHAR,
+    Integer,
+    TIMESTAMP,
+    Text,
+    Enum as SAEnum,
+    ForeignKey,
+    Numeric,
+    JSON,
+    Boolean,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -27,8 +34,7 @@ class Recipe(Base):
     cook_time_min: Mapped[int] = mapped_column(Integer, nullable=False)
     total_time_min: Mapped[int] = mapped_column(Integer, nullable=False)
     difficulty: Mapped[str] = mapped_column(
-        SAEnum("easy", "medium", "hard", name="difficulty_level"),
-        nullable=False
+        SAEnum("easy", "medium", "hard", name="difficulty_level"), nullable=False
     )
     servings: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
     calories_per_serving: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -40,8 +46,10 @@ class Recipe(Base):
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False, default=_now)
 
     steps: Mapped[list["RecipeStep"]] = relationship(
-        "RecipeStep", back_populates="recipe", cascade="all, delete-orphan",
-        order_by="RecipeStep.step_number"
+        "RecipeStep",
+        back_populates="recipe",
+        cascade="all, delete-orphan",
+        order_by="RecipeStep.step_number",
     )
     recipe_ingredients: Mapped[list["RecipeIngredient"]] = relationship(
         "RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan"

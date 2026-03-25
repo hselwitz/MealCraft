@@ -5,6 +5,7 @@ Revises:
 Create Date: 2026-03-24 00:00:00.000000
 
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -27,7 +28,8 @@ def upgrade() -> None:
         sa.Column(
             "status",
             sa.Enum("draft", "active", "archived", name="plan_status"),
-            nullable=False, default="draft",
+            nullable=False,
+            default="draft",
         ),
         sa.Column("created_at", sa.TIMESTAMP, nullable=False),
         sa.Column("generation_prompt_hash", sa.VARCHAR(64), nullable=True),
@@ -69,7 +71,8 @@ def upgrade() -> None:
         sa.Column(
             "status",
             sa.Enum("planned", "cooked", "skipped", "eating_out", name="slot_status"),
-            nullable=False, default="planned",
+            nullable=False,
+            default="planned",
         ),
         sa.Column("recipe_id", sa.VARCHAR(36), sa.ForeignKey("recipes.id"), nullable=True),
         sa.Column("servings", sa.Numeric(5, 2), nullable=False, default=2.0),
@@ -92,9 +95,18 @@ def upgrade() -> None:
         sa.Column("canonical_name", sa.VARCHAR(255), unique=True, nullable=False),
         sa.Column(
             "category",
-            sa.Enum("produce", "protein", "dairy", "grain", "pantry", "spice", "other",
-                    name="ingredient_category"),
-            nullable=False, default="other",
+            sa.Enum(
+                "produce",
+                "protein",
+                "dairy",
+                "grain",
+                "pantry",
+                "spice",
+                "other",
+                name="ingredient_category",
+            ),
+            nullable=False,
+            default="other",
         ),
         sa.Column("default_unit", sa.VARCHAR(50), nullable=False, default=""),
         sa.Column("shelf_life_days", sa.Integer, nullable=True),
@@ -122,7 +134,8 @@ def upgrade() -> None:
         sa.Column(
             "status",
             sa.Enum("available", "used", "discarded", name="leftover_status"),
-            nullable=False, default="available",
+            nullable=False,
+            default="available",
         ),
         sa.Column("used_in_slot_id", sa.VARCHAR(36), sa.ForeignKey("meal_slots.id"), nullable=True),
     )
@@ -135,22 +148,34 @@ def upgrade() -> None:
         sa.Column(
             "status",
             sa.Enum("draft", "finalized", "ordered", name="grocery_status"),
-            nullable=False, default="draft",
+            nullable=False,
+            default="draft",
         ),
     )
 
     op.create_table(
         "grocery_items",
         sa.Column("id", sa.VARCHAR(36), primary_key=True),
-        sa.Column("grocery_list_id", sa.VARCHAR(36), sa.ForeignKey("grocery_lists.id"), nullable=False),
+        sa.Column(
+            "grocery_list_id", sa.VARCHAR(36), sa.ForeignKey("grocery_lists.id"), nullable=False
+        ),
         sa.Column("ingredient_id", sa.VARCHAR(36), sa.ForeignKey("ingredients.id"), nullable=False),
         sa.Column("quantity", sa.Numeric(8, 3), nullable=False),
         sa.Column("unit", sa.VARCHAR(50), nullable=False),
         sa.Column(
             "store_section",
-            sa.Enum("produce", "meat", "dairy", "bakery", "pantry", "frozen", "other",
-                    name="store_section"),
-            nullable=False, default="other",
+            sa.Enum(
+                "produce",
+                "meat",
+                "dairy",
+                "bakery",
+                "pantry",
+                "frozen",
+                "other",
+                name="store_section",
+            ),
+            nullable=False,
+            default="other",
         ),
         sa.Column("checked", sa.Boolean, nullable=False, default=False),
     )

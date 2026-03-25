@@ -1,4 +1,3 @@
-import {useState} from "react";
 import {Calendar, Clock, Coffee, Zap} from "lucide-react";
 import {useGeneratePrepPlan, usePlans} from "@/hooks/useApi";
 import {useLocalStorage} from "@/hooks/useLocalStorage";

@@ -1,4 +1,5 @@
 """Feedback router."""
+
 import logging
 from collections import Counter
 from typing import Optional
@@ -42,9 +43,7 @@ async def list_feedback(
     if recipe_id:
         query = query.where(MealFeedback.recipe_id == recipe_id)
     if cursor:
-        cursor_result = await db.execute(
-            select(MealFeedback).where(MealFeedback.id == cursor)
-        )
+        cursor_result = await db.execute(select(MealFeedback).where(MealFeedback.id == cursor))
         cursor_fb = cursor_result.scalar_one_or_none()
         if cursor_fb:
             query = query.where(MealFeedback.created_at < cursor_fb.created_at)

@@ -1,11 +1,16 @@
 """MealCraft FastAPI application."""
+
 import logging
 from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.db import init_db
 from app.routers import (
-    plans_router, recipes_router, leftovers_router, grocery_router, feedback_router
+    plans_router,
+    recipes_router,
+    leftovers_router,
+    grocery_router,
+    feedback_router,
 )
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware

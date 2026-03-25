@@ -1,4 +1,5 @@
 """Leftover management: expiry estimation and status management."""
+
 import logging
 from datetime import date, timedelta
 
@@ -29,9 +30,7 @@ class LeftoverService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def estimate_expiry(
-        self, stored_date: str, recipe_id: str | None = None
-    ) -> str:
+    async def estimate_expiry(self, stored_date: str, recipe_id: str | None = None) -> str:
         """Estimate expiry date for a leftover."""
         try:
             stored = date.fromisoformat(stored_date)
@@ -43,6 +42,7 @@ class LeftoverService:
 
         if recipe_id:
             from app.models.ingredient import RecipeIngredient
+
             ri_result = await self.db.execute(
                 select(RecipeIngredient)
                 .where(RecipeIngredient.recipe_id == recipe_id)
@@ -52,9 +52,12 @@ class LeftoverService:
 
             if recipe_ingredients:
                 min_shelf_life = min(
-                    (ri.ingredient.shelf_life_days or DEFAULT_SHELF_LIFE_BY_CATEGORY.get(
-                        ri.ingredient.category, COOKED_LEFTOVER_SHELF_LIFE_DAYS
-                    ))
+                    (
+                        ri.ingredient.shelf_life_days
+                        or DEFAULT_SHELF_LIFE_BY_CATEGORY.get(
+                            ri.ingredient.category, COOKED_LEFTOVER_SHELF_LIFE_DAYS
+                        )
+                    )
                     for ri in recipe_ingredients
                 )
                 # Cooked food lasts min(cooked shelf life, shortest ingredient)

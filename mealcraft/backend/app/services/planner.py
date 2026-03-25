@@ -1,4 +1,5 @@
 """Orchestrates LLM plan generation and persistence."""
+
 import logging
 
 from app.llm.client import LLMClient
@@ -26,16 +27,15 @@ class PlannerService:
         pantry: list,
     ):
         """Async generator: yields progress strings, then saves all recipes."""
-        slots = (await self.db.execute(
-            select(MealSlot).where(MealSlot.meal_plan_id == plan.id)
-        )).scalars().all()
+        slots = (
+            (await self.db.execute(select(MealSlot).where(MealSlot.meal_plan_id == plan.id)))
+            .scalars()
+            .all()
+        )
 
         home_slots = [s for s in slots if s.status == "planned" and s.meal_type != "snack"]
 
-        slots_to_fill = [
-            {"date": str(s.date), "meal_type": s.meal_type}
-            for s in home_slots
-        ]
+        slots_to_fill = [{"date": str(s.date), "meal_type": s.meal_type} for s in home_slots]
 
         prefs = {
             **preferences,
@@ -91,9 +91,7 @@ class PlannerService:
         await self.db.flush()
         return recipe
 
-    async def _generate_and_save_recipe(
-        self, concept: str, constraints: dict
-    ) -> Recipe:
+    async def _generate_and_save_recipe(self, concept: str, constraints: dict) -> Recipe:
         """Call LLM to generate recipe and persist to DB."""
         recipe_out = await self.llm.generate_recipe(concept, constraints)
 

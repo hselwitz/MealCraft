@@ -3,11 +3,10 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
+
 # Import all models to ensure they're registered with Base
 from app.db import Base
-from app.models import (  # noqa: F401
-    meal_plan, recipe, ingredient, leftover, grocery
-)
+from app.models import meal_plan, recipe, ingredient, leftover, grocery  # noqa: F401
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config

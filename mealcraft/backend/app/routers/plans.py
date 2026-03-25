@@ -1,4 +1,5 @@
 """Plans router."""
+
 import json
 import logging
 from typing import Optional
@@ -9,8 +10,13 @@ from app.models.ingredient import RecipeIngredient
 from app.models.meal_plan import MealPlan, MealSlot
 from app.models.recipe import Recipe, RecipeStep
 from app.schemas.plan import (
-    MealPlanCreate, MealPlanUpdate, MealPlanOut, MealSlotOut, MealSlotUpdate,
-    MealPlanListItem, PrepPlanRequest
+    MealPlanCreate,
+    MealPlanUpdate,
+    MealPlanOut,
+    MealSlotOut,
+    MealSlotUpdate,
+    MealPlanListItem,
+    PrepPlanRequest,
 )
 from app.services.grocery import GroceryService
 from app.services.planner import PlannerService
@@ -28,9 +34,7 @@ async def _load_plan_with_slots(plan_id: str, db: AsyncSession) -> MealPlan:
     result = await db.execute(
         select(MealPlan)
         .where(MealPlan.id == plan_id)
-        .options(
-            selectinload(MealPlan.slots).selectinload(MealSlot.recipe)
-        )
+        .options(selectinload(MealPlan.slots).selectinload(MealSlot.recipe))
     )
     plan = result.scalar_one_or_none()
     if not plan:
@@ -137,9 +141,7 @@ async def update_slot(
 
     # Reload with recipe
     result = await db.execute(
-        select(MealSlot)
-        .where(MealSlot.id == slot_id)
-        .options(selectinload(MealSlot.recipe))
+        select(MealSlot).where(MealSlot.id == slot_id).options(selectinload(MealSlot.recipe))
     )
     return result.scalar_one()
 
@@ -169,9 +171,7 @@ async def regenerate_slot(
     recipe = await planner.regenerate_slot_recipe(slot, plan, {})
 
     result = await db.execute(
-        select(MealSlot)
-        .where(MealSlot.id == slot_id)
-        .options(selectinload(MealSlot.recipe))
+        select(MealSlot).where(MealSlot.id == slot_id).options(selectinload(MealSlot.recipe))
     )
     return result.scalar_one()
 
@@ -241,32 +241,34 @@ async def generate_prep_plan(
             )
             steps = steps_result.scalars().all()
 
-            recipes_data.append({
-                "title": recipe.title,
-                "servings": float(recipe.servings),
-                "prep_time_min": recipe.prep_time_min,
-                "cook_time_min": recipe.cook_time_min,
-                "scheduled_date": str(slot.date),
-                "meal_type": slot.meal_type,
-                "ingredients": [
-                    {
-                        "ingredient_name": ri.ingredient.canonical_name,
-                        "quantity": float(ri.quantity),
-                        "unit": ri.unit,
-                        "prep_note": ri.prep_note,
-                    }
-                    for ri in recipe_ingredients
-                ],
-                "steps": [
-                    {
-                        "step_number": s.step_number,
-                        "instruction": s.instruction,
-                        "duration_min": s.duration_min,
-                        "is_active": s.is_active,
-                    }
-                    for s in steps
-                ],
-            })
+            recipes_data.append(
+                {
+                    "title": recipe.title,
+                    "servings": float(recipe.servings),
+                    "prep_time_min": recipe.prep_time_min,
+                    "cook_time_min": recipe.cook_time_min,
+                    "scheduled_date": str(slot.date),
+                    "meal_type": slot.meal_type,
+                    "ingredients": [
+                        {
+                            "ingredient_name": ri.ingredient.canonical_name,
+                            "quantity": float(ri.quantity),
+                            "unit": ri.unit,
+                            "prep_note": ri.prep_note,
+                        }
+                        for ri in recipe_ingredients
+                    ],
+                    "steps": [
+                        {
+                            "step_number": s.step_number,
+                            "instruction": s.instruction,
+                            "duration_min": s.duration_min,
+                            "is_active": s.is_active,
+                        }
+                        for s in steps
+                    ],
+                }
+            )
 
     if not recipes_data:
         raise HTTPException(status_code=400, detail="No recipes found for this plan")

@@ -31,8 +31,7 @@ async def get_db() -> AsyncSession:
 
 async def init_db():
     """Create all tables on startup."""
-    from app.models import (  # noqa: F401
-        meal_plan, recipe, ingredient, leftover, grocery
-    )
+    from app.models import meal_plan, recipe, ingredient, leftover, grocery  # noqa: F401
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

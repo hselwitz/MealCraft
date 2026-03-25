@@ -1,4 +1,5 @@
 """Grocery router."""
+
 import logging
 
 from app.db import get_db
@@ -18,9 +19,7 @@ async def _load_grocery_list(list_id: str, db: AsyncSession) -> GroceryList:
     result = await db.execute(
         select(GroceryList)
         .where(GroceryList.id == list_id)
-        .options(
-            selectinload(GroceryList.items).selectinload(GroceryItem.ingredient)
-        )
+        .options(selectinload(GroceryList.items).selectinload(GroceryItem.ingredient))
     )
     gl = result.scalar_one_or_none()
     if not gl:
