@@ -71,10 +71,39 @@ export function useGeneratePlan() {
     });
 }
 
+export function useCurrentPrepPlan(planId: string | undefined) {
+    return useQuery({
+        queryKey: ["prep-plan", planId],
+        queryFn: () => plansApi.getCurrentPrepPlan(planId!),
+        enabled: !!planId,
+        retry: false, // 404 means no plan yet — don't retry
+    });
+}
+
+export function usePatchPrepPlan() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({planId, completedTasks}: { planId: string; completedTasks: string[] }) =>
+            plansApi.patchPrepPlan(planId, {completed_tasks: completedTasks}),
+        onSuccess: (_data, vars) => qc.invalidateQueries({queryKey: ["prep-plan", vars.planId]}),
+    });
+}
+
 export function useGeneratePrepPlan() {
+    const qc = useQueryClient();
     return useMutation({
         mutationFn: ({planId, timeWindows}: { planId: string; timeWindows?: string[] }) =>
             plansApi.generatePrepPlan(planId, timeWindows),
+        onSuccess: (_data, vars) => qc.invalidateQueries({queryKey: ["prep-plan", vars.planId]}),
+    });
+}
+
+export function useCurrentGroceryList(planId: string | undefined) {
+    return useQuery({
+        queryKey: ["grocery", "current", planId],
+        queryFn: () => plansApi.getCurrentGroceryList(planId!),
+        enabled: !!planId,
+        retry: false,
     });
 }
 
@@ -83,7 +112,7 @@ export function useGenerateGroceryList() {
     return useMutation({
         mutationFn: ({planId, pantryStaples}: { planId: string; pantryStaples?: string[] }) =>
             plansApi.generateGroceryList(planId, pantryStaples),
-        onSuccess: () => qc.invalidateQueries({queryKey: ["grocery"]}),
+        onSuccess: (_data, vars) => qc.invalidateQueries({queryKey: ["grocery", "current", vars.planId]}),
     });
 }
 

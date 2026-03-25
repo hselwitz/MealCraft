@@ -1,4 +1,5 @@
-import {useLocalStorage} from "./useLocalStorage";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {settingsApi} from "@/api/settings";
 
 export interface AppSettings {
     maxDifficulty: "easy" | "medium" | "hard";
@@ -24,8 +25,26 @@ export const DEFAULT_SETTINGS: AppSettings = {
 };
 
 export function useSettings() {
-    const [raw, setRaw] = useLocalStorage<AppSettings>("mealcraft:settings", DEFAULT_SETTINGS);
-    // Merge with defaults so new fields are present even when loaded from old localStorage
-    const settings = {...DEFAULT_SETTINGS, ...raw};
-    return [settings, setRaw] as const;
+    const qc = useQueryClient();
+
+    const {data} = useQuery({
+        queryKey: ["settings"],
+        queryFn: settingsApi.get,
+        staleTime: Infinity,
+    });
+
+    const mutation = useMutation({
+        mutationFn: settingsApi.update,
+        onSuccess: (updated) => qc.setQueryData(["settings"], updated),
+    });
+
+    const settings: AppSettings = data ? {...DEFAULT_SETTINGS, ...data} : DEFAULT_SETTINGS;
+
+    // Same [settings, setSettings] API as before — setSettings accepts value or updater fn
+    const setSettings = (updater: AppSettings | ((prev: AppSettings) => AppSettings)) => {
+        const next = typeof updater === "function" ? updater(settings) : updater;
+        mutation.mutate(next);
+    };
+
+    return [settings, setSettings] as const;
 }

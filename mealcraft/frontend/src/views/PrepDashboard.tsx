@@ -1,7 +1,6 @@
 import {Calendar, Clock, Coffee, Zap} from "lucide-react";
-import {useGeneratePrepPlan, usePlans} from "@/hooks/useApi";
-import {useLocalStorage} from "@/hooks/useLocalStorage";
-import type {PrepPlan, PrepTask} from "@/types";
+import {useCurrentPrepPlan, useGeneratePrepPlan, usePatchPrepPlan, usePlans} from "@/hooks/useApi";
+import type {PrepTask} from "@/types";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
 import {Card, CardBody, CardHeader} from "@/components/ui/card";
@@ -9,36 +8,27 @@ import {Card, CardBody, CardHeader} from "@/components/ui/card";
 export function PrepDashboard() {
     const {data: plans} = usePlans();
     const generatePrep = useGeneratePrepPlan();
+    const patchPrep = usePatchPrepPlan();
 
     const activePlan = plans?.find((p) => p.status === "active" || p.status === "draft");
 
-    // Stable keys — store planId alongside data so we can validate on load
-    const [storedPrep, setStoredPrep] = useLocalStorage<{ planId: string; plan: PrepPlan } | null>(
-        "mealcraft:prep", null
-    );
-    const [storedTasks, setStoredTasks] = useLocalStorage<{ planId: string; tasks: string[] } | null>(
-        "mealcraft:prep-tasks", null
-    );
-    const prepPlan = storedPrep?.planId === activePlan?.id ? storedPrep?.plan ?? null : null;
-    const completedTaskNames = storedTasks?.planId === activePlan?.id ? storedTasks?.tasks ?? [] : [];
-    const completedTasks = new Set(completedTaskNames);
+    const {data: prepPlan} = useCurrentPrepPlan(activePlan?.id);
+    const completedTasks = new Set(prepPlan?.completed_tasks ?? []);
 
     const handleGenerate = async () => {
         if (!activePlan) return;
-        const result = await generatePrep.mutateAsync({
+        await generatePrep.mutateAsync({
             planId: activePlan.id,
             timeWindows: ["Sunday afternoon 2-4pm", "Wednesday evening 6-7pm"],
         });
-        setStoredPrep({planId: activePlan.id, plan: result});
-        setStoredTasks({planId: activePlan.id, tasks: []});
     };
 
-    const toggleTask = (taskName: string) => {
+    const toggleTask = async (taskName: string) => {
         if (!activePlan) return;
         const next = new Set(completedTasks);
         if (next.has(taskName)) next.delete(taskName);
         else next.add(taskName);
-        setStoredTasks({planId: activePlan.id, tasks: [...next]});
+        await patchPrep.mutateAsync({planId: activePlan.id, completedTasks: [...next]});
     };
 
     // Group tasks by batch_group

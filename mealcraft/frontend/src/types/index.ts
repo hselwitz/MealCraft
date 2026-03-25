@@ -200,6 +200,7 @@ export interface PrepPlan {
     total_active_min: number;
     total_passive_min: number;
     recommended_sessions: string[];
+    completed_tasks?: string[];
 }
 
 // ─── Pagination ──────────────────────────────────────────────────────────────

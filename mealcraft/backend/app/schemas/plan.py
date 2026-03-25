@@ -108,3 +108,7 @@ class PrepPlanRequest(BaseModel):
     time_windows: List[str] = Field(
         default_factory=lambda: ["Sunday afternoon", "Wednesday evening"]
     )
+
+
+class PrepPlanPatch(BaseModel):
+    completed_tasks: List[str]

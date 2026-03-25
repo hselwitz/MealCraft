@@ -6,8 +6,10 @@ from typing import Optional
 
 from app.db import get_db
 from app.llm.client import get_llm_client, LLMClient
+from app.models.grocery import GroceryList, GroceryItem
 from app.models.ingredient import RecipeIngredient
 from app.models.meal_plan import MealPlan, MealSlot
+from app.models.prep_plan import PrepPlanRecord
 from app.models.recipe import Recipe, RecipeStep
 from app.schemas.plan import (
     MealPlanCreate,
@@ -16,6 +18,7 @@ from app.schemas.plan import (
     MealSlotOut,
     MealSlotUpdate,
     MealPlanListItem,
+    PrepPlanPatch,
     PrepPlanRequest,
 )
 from app.services.grocery import GroceryService
@@ -274,7 +277,99 @@ async def generate_prep_plan(
         raise HTTPException(status_code=400, detail="No recipes found for this plan")
 
     prep_plan = await llm.optimize_prep_plan(recipes_data, body.time_windows)
-    return prep_plan.model_dump()
+
+    # Persist — replace any existing prep plan for this plan
+    existing = await db.execute(
+        select(PrepPlanRecord).where(PrepPlanRecord.meal_plan_id == plan_id)
+    )
+    for old in existing.scalars().all():
+        await db.delete(old)
+
+    data = prep_plan.model_dump()
+    data["completed_tasks"] = []
+    record = PrepPlanRecord(meal_plan_id=plan_id, data=data)
+    db.add(record)
+    await db.flush()
+
+    return data
+
+
+@router.get("/{plan_id}/prep-plan/current")
+async def get_current_prep_plan(
+    plan_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(PrepPlanRecord)
+        .where(PrepPlanRecord.meal_plan_id == plan_id)
+        .order_by(desc(PrepPlanRecord.created_at))
+        .limit(1)
+    )
+    record = result.scalar_one_or_none()
+    if not record:
+        raise HTTPException(status_code=404, detail="No prep plan found for this plan")
+    return record.data
+
+
+@router.patch("/{plan_id}/prep-plan/current")
+async def patch_current_prep_plan(
+    plan_id: str,
+    body: PrepPlanPatch,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(PrepPlanRecord)
+        .where(PrepPlanRecord.meal_plan_id == plan_id)
+        .order_by(desc(PrepPlanRecord.created_at))
+        .limit(1)
+    )
+    record = result.scalar_one_or_none()
+    if not record:
+        raise HTTPException(status_code=404, detail="No prep plan found for this plan")
+    updated = dict(record.data)
+    updated["completed_tasks"] = body.completed_tasks
+    record.data = updated
+    await db.flush()
+    return record.data
+
+
+@router.get("/{plan_id}/grocery-list/current")
+async def get_current_grocery_list(
+    plan_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(GroceryList)
+        .where(GroceryList.meal_plan_id == plan_id)
+        .order_by(desc(GroceryList.generated_at))
+        .limit(1)
+    )
+    grocery_list = result.scalar_one_or_none()
+    if not grocery_list:
+        raise HTTPException(status_code=404, detail="No grocery list found for this plan")
+
+    items_result = await db.execute(
+        select(GroceryItem)
+        .where(GroceryItem.grocery_list_id == grocery_list.id)
+        .options(selectinload(GroceryItem.ingredient))
+    )
+    items = items_result.scalars().all()
+
+    return {
+        "id": grocery_list.id,
+        "meal_plan_id": grocery_list.meal_plan_id,
+        "items": [
+            {
+                "id": item.id,
+                "ingredient_name": item.ingredient.canonical_name if item.ingredient else "",
+                "quantity": float(item.quantity),
+                "unit": item.unit,
+                "store_section": item.store_section,
+                "checked": item.checked,
+            }
+            for item in items
+        ],
+    }
 
 
 @router.post("/{plan_id}/grocery-list")

@@ -11,6 +11,7 @@ from app.routers import (
     leftovers_router,
     grocery_router,
     feedback_router,
+    settings_router,
 )
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -91,3 +92,4 @@ app.include_router(recipes_router, prefix="/api")
 app.include_router(leftovers_router, prefix="/api")
 app.include_router(grocery_router, prefix="/api")
 app.include_router(feedback_router, prefix="/api")
+app.include_router(settings_router, prefix="/api")

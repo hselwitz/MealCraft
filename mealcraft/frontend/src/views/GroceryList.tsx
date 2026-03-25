@@ -1,8 +1,7 @@
 import {useState} from "react";
 import {CheckCircle2, ShoppingCart} from "lucide-react";
 import {GroceryListSkeleton} from "@/components/ui/skeleton";
-import {useGenerateGroceryList, useGroceryList, usePlans, useToggleGroceryItem} from "@/hooks/useApi";
-import {useLocalStorage} from "@/hooks/useLocalStorage";
+import {useCurrentGroceryList, useGenerateGroceryList, usePlans, useToggleGroceryItem} from "@/hooks/useApi";
 import {useSettings} from "@/hooks/useSettings";
 import {AmazonFreshModal} from "@/components/AmazonFreshModal";
 import type {GroceryItem, StoreSection} from "@/types";
@@ -30,28 +29,20 @@ export function GroceryList() {
 
     const activePlan = plans?.find((p) => p.status === "active" || p.status === "draft");
 
-    // Store {planId, listId} under a stable key so the hook never re-initializes on load
-    const [stored, setStored] = useLocalStorage<{ planId: string; listId: string } | null>(
-        "mealcraft:grocery", null
-    );
-    // @ts-ignore
-    const groceryListId = stored?.planId === activePlan?.id ? stored.listId : null;
-
-    const {data: groceryList, isLoading} = useGroceryList(groceryListId ?? undefined);
+    const {data: groceryList, isLoading} = useCurrentGroceryList(activePlan?.id);
 
     const handleGenerate = async () => {
         if (!activePlan) return;
-        const result = await generateList.mutateAsync({
+        await generateList.mutateAsync({
             planId: activePlan.id,
             pantryStaples: settings.pantryStaples,
         });
-        setStored({planId: activePlan.id, listId: result.grocery_list_id});
     };
 
     const handleToggle = async (item: GroceryItem) => {
-        if (!groceryListId) return;
+        if (!groceryList?.id) return;
         await toggleItem.mutateAsync({
-            listId: groceryListId,
+            listId: groceryList.id,
             itemId: item.id,
             checked: !item.checked,
         });
