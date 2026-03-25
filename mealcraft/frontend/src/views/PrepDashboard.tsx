@@ -147,7 +147,9 @@ export function PrepDashboard() {
                         {Object.entries(groupedTasks ?? {}).map(([group, tasks]) => (
                             <Card key={group}>
                                 <CardHeader>
-                                    <h3 className="font-semibold text-gray-800">{group}</h3>
+                                    <h3 className="font-semibold text-gray-800">
+                                        {group.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())}
+                                    </h3>
                                 </CardHeader>
                                 <CardBody className="space-y-2 py-2">
                                     {tasks.map((task) => (
