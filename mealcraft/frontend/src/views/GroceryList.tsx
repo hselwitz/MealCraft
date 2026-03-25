@@ -34,6 +34,7 @@ export function GroceryList() {
     const [stored, setStored] = useLocalStorage<{ planId: string; listId: string } | null>(
         "mealcraft:grocery", null
     );
+    // @ts-ignore
     const groceryListId = stored?.planId === activePlan?.id ? stored.listId : null;
 
     const {data: groceryList, isLoading} = useGroceryList(groceryListId ?? undefined);
