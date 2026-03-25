@@ -67,7 +67,7 @@ export function WeeklyPlanner() {
         setError(null);
         try {
             const slots_config = weekDates.flatMap((date) =>
-                MEAL_TYPES.map((meal_type) => ({date, meal_type}))
+                MEAL_TYPES.map((meal_type) => ({date, meal_type, status: "skipped" as const}))
             );
             const created = await createPlan.mutateAsync({
                 name: `Week of ${weekDates[0]}`,

@@ -1,5 +1,5 @@
 import {useNavigate} from "react-router-dom";
-import {GripVertical, RefreshCw, Utensils, X} from "lucide-react";
+import {GripVertical, RefreshCw, Utensils} from "lucide-react";
 import {useDraggable, useDroppable} from "@dnd-kit/core";
 import type {MealSlot as MealSlotType} from "@/types";
 import {Badge} from "./ui/badge";
@@ -15,7 +15,7 @@ interface MealSlotProps {
 const statusColors: Record<string, string> = {
     planned: "bg-white",
     cooked: "bg-green-50",
-    skipped: "bg-gray-50 opacity-60",
+    skipped: "bg-gray-50 border-dashed border-gray-200 opacity-50 hover:opacity-100",
     eating_out: "bg-orange-50",
 };
 
@@ -96,10 +96,12 @@ export function MealSlotCard({
                     <span>Eating out</span>
                 </div>
             ) : slot.status === "skipped" ? (
-                <div className="flex items-center gap-1 text-gray-400" {...listeners}>
-                    <X size={12}/>
-                    <span>Skipped</span>
-                </div>
+                <button
+                    className="w-full h-full flex items-center justify-center text-gray-300 hover:text-primary-400 transition-colors"
+                    onClick={() => onStatusChange(slot.id, "planned")}
+                >
+                    <span className="text-xl font-light leading-none">+</span>
+                </button>
             ) : (
                 <div className="text-gray-400 italic" {...listeners}>No meal planned</div>
             )}
@@ -120,36 +122,36 @@ export function MealSlotCard({
                 )}
             </div>
 
-            {/* Status toggle buttons at bottom */}
-            <div
-                className="flex gap-1 mt-1.5"
-                onClick={(e) => e.stopPropagation()}
-            >
-                {slot.status !== "eating_out" && (
-                    <button
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 hover:bg-orange-200"
-                        onClick={() => onStatusChange(slot.id, "eating_out")}
-                    >
-                        Out
-                    </button>
-                )}
-                {slot.status !== "skipped" && (
+            {/* Status toggle buttons — hidden for bare skipped slots */}
+            {slot.status !== "skipped" && (
+                <div
+                    className="flex gap-1 mt-1.5"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {slot.status !== "eating_out" && (
+                        <button
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 hover:bg-orange-200"
+                            onClick={() => onStatusChange(slot.id, "eating_out")}
+                        >
+                            Out
+                        </button>
+                    )}
                     <button
                         className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200"
                         onClick={() => onStatusChange(slot.id, "skipped")}
                     >
-                        Skip
+                        Remove
                     </button>
-                )}
-                {(slot.status === "eating_out" || slot.status === "skipped") && (
-                    <button
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 hover:bg-green-200"
-                        onClick={() => onStatusChange(slot.id, "planned")}
-                    >
-                        Plan
-                    </button>
-                )}
-            </div>
+                    {slot.status === "eating_out" && (
+                        <button
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 hover:bg-green-200"
+                            onClick={() => onStatusChange(slot.id, "planned")}
+                        >
+                            Plan
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
