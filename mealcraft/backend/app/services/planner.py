@@ -12,6 +12,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
+_MEAL_CALORIE_FRACTION: dict[str, float] = {
+    "breakfast": 0.25,
+    "lunch": 0.30,
+    "dinner": 0.40,
+    "snack": 0.05,
+}
+
+
+def _meal_calorie_target(daily_target: int | None, meal_type: str) -> int | None:
+    if not daily_target:
+        return None
+    fraction = _MEAL_CALORIE_FRACTION.get(meal_type, 0.33)
+    return round(daily_target * fraction)
+
 
 class PlannerService:
     def __init__(self, db: AsyncSession, llm: LLMClient):
@@ -59,7 +73,7 @@ class PlannerService:
 
             constraints = {
                 "target_servings": float(db_slot.servings),
-                "calorie_target": plan.calorie_target,
+                "calorie_target": _meal_calorie_target(plan.calorie_target, slot_plan.meal_type),
                 "max_difficulty": preferences.get("max_difficulty", "medium"),
                 "dietary_restrictions": preferences.get("dietary_restrictions", []),
             }
@@ -79,7 +93,7 @@ class PlannerService:
         """Regenerate recipe for a single slot."""
         constraints = {
             "target_servings": float(slot.servings),
-            "calorie_target": plan.calorie_target,
+            "calorie_target": _meal_calorie_target(plan.calorie_target, slot.meal_type),
             "max_difficulty": preferences.get("max_difficulty", "medium"),
             "dietary_restrictions": preferences.get("dietary_restrictions", []),
         }
