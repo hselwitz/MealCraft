@@ -85,7 +85,7 @@ class MealPlanListItem(BaseModel):
 
 
 class FeedbackCreate(BaseModel):
-    meal_slot_id: str
+    meal_slot_id: Optional[str] = None
     recipe_id: str
     rating: str
     tags: Optional[list] = None
@@ -94,7 +94,7 @@ class FeedbackCreate(BaseModel):
 
 class FeedbackOut(BaseModel):
     id: str
-    meal_slot_id: str
+    meal_slot_id: Optional[str] = None
     recipe_id: str
     rating: str
     tags: Optional[list] = None

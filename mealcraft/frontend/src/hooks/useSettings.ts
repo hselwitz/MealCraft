@@ -7,6 +7,7 @@ export interface AppSettings {
     calorieTarget: number;
     cuisinePreferences: string[];
     dietaryRestrictions: string[];
+    pantryStaples: string[];
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -16,8 +17,15 @@ export const DEFAULT_SETTINGS: AppSettings = {
     calorieTarget: 2500,
     cuisinePreferences: [],
     dietaryRestrictions: [],
+    pantryStaples: [
+        "salt", "black pepper", "olive oil", "vegetable oil",
+        "sugar", "all-purpose flour", "baking soda", "baking powder",
+    ],
 };
 
 export function useSettings() {
-    return useLocalStorage<AppSettings>("mealcraft:settings", DEFAULT_SETTINGS);
+    const [raw, setRaw] = useLocalStorage<AppSettings>("mealcraft:settings", DEFAULT_SETTINGS);
+    // Merge with defaults so new fields are present even when loaded from old localStorage
+    const settings = {...DEFAULT_SETTINGS, ...raw};
+    return [settings, setRaw] as const;
 }

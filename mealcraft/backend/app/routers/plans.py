@@ -280,6 +280,7 @@ async def generate_prep_plan(
 @router.post("/{plan_id}/grocery-list")
 async def generate_grocery_list(
     plan_id: str,
+    body: dict = {},
     db: AsyncSession = Depends(get_db),
     llm: LLMClient = Depends(get_llm_client),
 ):
@@ -288,7 +289,8 @@ async def generate_grocery_list(
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
 
+    pantry_staples = body.get("pantry_staples") or None
     grocery_svc = GroceryService(db, llm)
-    grocery_list = await grocery_svc.generate_for_plan(plan_id)
+    grocery_list = await grocery_svc.generate_for_plan(plan_id, pantry_staples=pantry_staples)
 
     return {"grocery_list_id": grocery_list.id, "status": "generated"}

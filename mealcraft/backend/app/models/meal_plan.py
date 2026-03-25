@@ -81,8 +81,8 @@ class MealFeedback(Base):
     __tablename__ = "meal_feedback"
 
     id: Mapped[str] = mapped_column(VARCHAR(36), primary_key=True, default=_uuid)
-    meal_slot_id: Mapped[str] = mapped_column(
-        VARCHAR(36), ForeignKey("meal_slots.id"), nullable=False
+    meal_slot_id: Mapped[str | None] = mapped_column(
+        VARCHAR(36), ForeignKey("meal_slots.id"), nullable=True
     )
     recipe_id: Mapped[str] = mapped_column(VARCHAR(36), ForeignKey("recipes.id"), nullable=False)
     rating: Mapped[str] = mapped_column(

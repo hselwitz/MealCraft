@@ -1,5 +1,5 @@
 import {useNavigate} from "react-router-dom";
-import {RefreshCw, Utensils, X} from "lucide-react";
+import {GripVertical, RefreshCw, Utensils, X} from "lucide-react";
 import {useDraggable, useDroppable} from "@dnd-kit/core";
 import type {MealSlot as MealSlotType} from "@/types";
 import {Badge} from "./ui/badge";
@@ -57,13 +57,20 @@ export function MealSlotCard({
         >
             {slot.recipe ? (
                 <div>
-                    <p
-                        className="font-medium text-gray-800 leading-tight line-clamp-2 cursor-grab active:cursor-grabbing hover:text-primary-700"
-                        onClick={() => navigate(`/recipes/${slot.recipe_id}`)}
-                        {...listeners}
-                    >
-                        {slot.recipe.title}
-                    </p>
+                    <div className="flex items-start gap-1">
+                        <span
+                            className="shrink-0 mt-0.5 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400"
+                            {...listeners}
+                        >
+                            <GripVertical size={12}/>
+                        </span>
+                        <p
+                            className="font-medium text-gray-800 leading-tight line-clamp-2 hover:text-primary-700 cursor-pointer"
+                            onClick={() => navigate(`/recipes/${slot.recipe_id}`)}
+                        >
+                            {slot.recipe.title}
+                        </p>
+                    </div>
                     <div className="flex items-center gap-1 mt-1 text-gray-500">
                         <span>{slot.recipe.prep_time_min + slot.recipe.cook_time_min}min</span>
                         {slot.recipe.calories_per_serving && (

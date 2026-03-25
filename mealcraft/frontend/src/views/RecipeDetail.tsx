@@ -49,11 +49,7 @@ export function RecipeDetail() {
 
     const handleFeedback = async (rating: "thumbs_up" | "thumbs_down") => {
         try {
-            await apiPost("/feedback", {
-                recipe_id: recipe.id,
-                meal_slot_id: "00000000-0000-0000-0000-000000000000", // placeholder
-                rating,
-            });
+            await apiPost("/feedback", {recipe_id: recipe.id, rating});
             setFeedbackSent(rating);
         } catch {
             // ignore
@@ -116,6 +112,12 @@ export function RecipeDetail() {
                         <Clock size={15} className="text-gray-400"/>
                         <span>Cook: {recipe.cook_time_min}min</span>
                     </div>
+                    {recipe.total_time_min && (
+                        <div className="flex items-center gap-1 text-sm font-medium text-gray-700">
+                            <Clock size={15} className="text-primary-500"/>
+                            <span>Total: {recipe.total_time_min}min</span>
+                        </div>
+                    )}
                     <div className="flex items-center gap-1 text-sm text-gray-600">
                         <Users size={15} className="text-gray-400"/>
                         <span>{(recipe.servings * scaleFactor).toFixed(1)} servings</span>
@@ -215,7 +217,35 @@ export function RecipeDetail() {
 
             {/* Steps */}
             <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-3">Instructions</h2>
+                {(() => {
+                    const steps = recipe.steps ?? [];
+                    const totalTime = steps.reduce((sum, s) => sum + (s.duration_min ?? 1), 0);
+                    const doneTime = steps
+                        .filter((s) => completedSteps.has(s.step_number))
+                        .reduce((sum, s) => sum + (s.duration_min ?? 1), 0);
+                    const pct = totalTime > 0 ? (doneTime / totalTime) * 100 : 0;
+
+                    return (
+                        <>
+                            <div className="flex items-center justify-between mb-2">
+                                <h2 className="text-xl font-semibold text-gray-900">Instructions</h2>
+                                {steps.length > 0 && (
+                                    <span className="text-sm text-gray-500">
+                                        {completedSteps.size}/{steps.length} steps done
+                                    </span>
+                                )}
+                            </div>
+                            {steps.length > 0 && completedSteps.size > 0 && (
+                                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-3">
+                                    <div
+                                        className="h-full bg-green-500 rounded-full transition-all"
+                                        style={{width: `${pct}%`}}
+                                    />
+                                </div>
+                            )}
+                        </>
+                    );
+                })()}
                 <div className="space-y-3">
                     {recipe.steps?.map((step) => (
                         <div

@@ -26,6 +26,6 @@ export const plansApi = {
             time_windows: timeWindows ?? ["Sunday afternoon", "Wednesday evening"],
         }),
 
-    generateGroceryList: (planId: string) =>
-        apiPost<{ grocery_list_id: string; status: string }>(`/plans/${planId}/grocery-list`),
+    generateGroceryList: (planId: string, pantryStaples?: string[]) =>
+        apiPost<{ grocery_list_id: string; status: string }>(`/plans/${planId}/grocery-list`, pantryStaples ? {pantry_staples: pantryStaples} : undefined),
 };

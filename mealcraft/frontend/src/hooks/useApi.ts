@@ -81,7 +81,8 @@ export function useGeneratePrepPlan() {
 export function useGenerateGroceryList() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (planId: string) => plansApi.generateGroceryList(planId),
+        mutationFn: ({planId, pantryStaples}: { planId: string; pantryStaples?: string[] }) =>
+            plansApi.generateGroceryList(planId, pantryStaples),
         onSuccess: () => qc.invalidateQueries({queryKey: ["grocery"]}),
     });
 }

@@ -235,6 +235,23 @@ export function Settings() {
                 </CardBody>
             </Card>
 
+            {/* Pantry Staples */}
+            <Card>
+                <CardHeader>
+                    <h2 className="font-semibold text-gray-900">Pantry Staples</h2>
+                    <p className="text-sm text-gray-500">
+                        Items always on hand — excluded from the grocery list.
+                    </p>
+                </CardHeader>
+                <CardBody className="pt-0">
+                    <TagInput
+                        values={settings.pantryStaples}
+                        onChange={(v) => update("pantryStaples", v)}
+                        placeholder="e.g. garlic, butter, soy sauce…"
+                    />
+                </CardBody>
+            </Card>
+
             {/* Cuisine & Dietary */}
             <Card>
                 <CardHeader>

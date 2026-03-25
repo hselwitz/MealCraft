@@ -11,11 +11,16 @@ export function PrepDashboard() {
     const generatePrep = useGeneratePrepPlan();
 
     const activePlan = plans?.find((p) => p.status === "active" || p.status === "draft");
-    const prepKey = activePlan ? `mealcraft:prep:${activePlan.id}` : "mealcraft:prep:none";
-    const tasksKey = activePlan ? `mealcraft:prep-tasks:${activePlan.id}` : "mealcraft:prep-tasks:none";
 
-    const [prepPlan, setPrepPlan] = useLocalStorage<PrepPlan | null>(prepKey, null);
-    const [completedTaskNames, setCompletedTaskNames] = useLocalStorage<string[]>(tasksKey, []);
+    // Stable keys — store planId alongside data so we can validate on load
+    const [storedPrep, setStoredPrep] = useLocalStorage<{ planId: string; plan: PrepPlan } | null>(
+        "mealcraft:prep", null
+    );
+    const [storedTasks, setStoredTasks] = useLocalStorage<{ planId: string; tasks: string[] } | null>(
+        "mealcraft:prep-tasks", null
+    );
+    const prepPlan = storedPrep?.planId === activePlan?.id ? storedPrep.plan : null;
+    const completedTaskNames = storedTasks?.planId === activePlan?.id ? storedTasks.tasks : [];
     const completedTasks = new Set(completedTaskNames);
 
     const handleGenerate = async () => {
@@ -24,15 +29,16 @@ export function PrepDashboard() {
             planId: activePlan.id,
             timeWindows: ["Sunday afternoon 2-4pm", "Wednesday evening 6-7pm"],
         });
-        setPrepPlan(result);
-        setCompletedTaskNames([]);
+        setStoredPrep({planId: activePlan.id, plan: result});
+        setStoredTasks({planId: activePlan.id, tasks: []});
     };
 
     const toggleTask = (taskName: string) => {
+        if (!activePlan) return;
         const next = new Set(completedTasks);
         if (next.has(taskName)) next.delete(taskName);
         else next.add(taskName);
-        setCompletedTaskNames([...next]);
+        setStoredTasks({planId: activePlan.id, tasks: [...next]});
     };
 
     // Group tasks by batch_group
@@ -45,6 +51,11 @@ export function PrepDashboard() {
 
     const completedCount = completedTasks.size;
     const totalCount = prepPlan?.tasks.length ?? 0;
+    const totalTime = prepPlan?.tasks.reduce((sum, t) => sum + (t.duration_min ?? 1), 0) ?? 0;
+    const doneTime = prepPlan?.tasks
+        .filter((t) => completedTasks.has(t.task_name))
+        .reduce((sum, t) => sum + (t.duration_min ?? 1), 0) ?? 0;
+    const pct = totalTime > 0 ? (doneTime / totalTime) * 100 : 0;
 
     return (
         <div className="space-y-6">
@@ -130,12 +141,12 @@ export function PrepDashboard() {
                         <div>
                             <div className="flex justify-between text-sm text-gray-500 mb-1">
                                 <span>Progress</span>
-                                <span>{Math.round((completedCount / totalCount) * 100)}%</span>
+                                <span>{Math.round(pct)}%</span>
                             </div>
                             <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                                 <div
                                     className="h-full bg-primary-500 rounded-full transition-all"
-                                    style={{width: `${(completedCount / totalCount) * 100}%`}}
+                                    style={{width: `${pct}%`}}
                                 />
                             </div>
                         </div>
