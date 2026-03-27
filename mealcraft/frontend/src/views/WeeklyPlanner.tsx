@@ -15,7 +15,6 @@ import {useSettings} from "@/hooks/useSettings";
 import type {MealType} from "@/types";
 import {Button} from "@/components/ui/button";
 import {MealSlotCard} from "@/components/MealSlot";
-import {Badge} from "@/components/ui/badge";
 import {useQueryClient} from "@tanstack/react-query";
 
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
@@ -157,14 +156,7 @@ export function WeeklyPlanner() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Weekly Planner</h1>
-                    {plan && (
-                        <p className="text-sm text-gray-500">
-                            <Badge variant={plan.status === "active" ? "green" : plan.status === "draft" ? "yellow" : "gray"}>
-                                {plan.status}
-                            </Badge>
-                        </p>
-                    )}
+                    <h1 className="text-2xl font-bold text-gray-900">Planner</h1>
                 </div>
 
                 <div className="flex items-center gap-2">
