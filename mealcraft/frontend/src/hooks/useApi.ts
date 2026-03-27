@@ -59,6 +59,24 @@ export function useRegenerateSlot() {
     });
 }
 
+export function useCreateSlot() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({planId, date, mealType}: {planId: string; date: string; mealType: string}) =>
+            plansApi.createSlot(planId, date, mealType),
+        onSuccess: (_data, vars) => qc.invalidateQueries({queryKey: ["plans", vars.planId]}),
+    });
+}
+
+export function useDeleteSlot() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({planId, slotId}: {planId: string; slotId: string}) =>
+            plansApi.deleteSlot(planId, slotId),
+        onSuccess: (_data, vars) => qc.invalidateQueries({queryKey: ["plans", vars.planId]}),
+    });
+}
+
 export function useGeneratePlan() {
     const qc = useQueryClient();
     return useMutation({

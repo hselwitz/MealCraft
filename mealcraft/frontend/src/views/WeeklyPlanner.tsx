@@ -1,7 +1,15 @@
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {closestCenter, DndContext, DragEndEvent} from "@dnd-kit/core";
-import {CalendarDays, ChevronLeft, ChevronRight, Plus, Wand2} from "lucide-react";
-import {useCreatePlan, usePlan, usePlans, useRegenerateSlot, useUpdateSlot} from "@/hooks/useApi";
+import {ChevronLeft, ChevronRight, Wand2} from "lucide-react";
+import {
+    useCreatePlan,
+    useCreateSlot,
+    useDeleteSlot,
+    usePlan,
+    usePlans,
+    useRegenerateSlot,
+    useUpdateSlot,
+} from "@/hooks/useApi";
 import {apiPostStream} from "@/api/client";
 import {useSettings} from "@/hooks/useSettings";
 import type {MealType, SlotStatus} from "@/types";
@@ -11,86 +19,99 @@ import {Badge} from "@/components/ui/badge";
 import {useQueryClient} from "@tanstack/react-query";
 
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const TODAY = new Date().toISOString().split("T")[0];
 
-function getWeekDates(startDate: Date): string[] {
-    const dates: string[] = [];
-    const d = new Date(startDate);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    d.setDate(diff);
-    for (let i = 0; i < 7; i++) {
-        const curr = new Date(d);
-        curr.setDate(d.getDate() + i);
-        dates.push(curr.toISOString().split("T")[0]);
-    }
-    return dates;
+function addDays(base: Date, n: number): string {
+    const d = new Date(base);
+    d.setDate(d.getDate() + n);
+    return d.toISOString().split("T")[0];
 }
 
-function getMonday(date: Date): Date {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    d.setDate(diff);
-    return d;
+function getVisibleDates(dayOffset: number): string[] {
+    const base = new Date();
+    return Array.from({length: 7}, (_, i) => addDays(base, dayOffset + i));
+}
+
+function fmtDate(iso: string) {
+    return new Date(iso + "T12:00:00").toLocaleDateString("en-US", {month: "short", day: "numeric"});
+}
+
+function fmtDayLabel(iso: string) {
+    return new Date(iso + "T12:00:00").toLocaleDateString("en-US", {weekday: "short"});
 }
 
 export function WeeklyPlanner() {
     const qc = useQueryClient();
-    const [weekOffset, setWeekOffset] = useState(0);
-    const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
-    const [selectedDayIndex, setSelectedDayIndex] = useState(new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
+    const [dayOffset, setDayOffset] = useState(0);
+    const [selectedDayIndex, setSelectedDayIndex] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [generating, setGenerating] = useState(false);
     const [genStatus, setGenStatus] = useState<string>("");
 
-    const baseDate = getMonday(new Date());
-    baseDate.setDate(baseDate.getDate() + weekOffset * 7);
-    const weekDates = getWeekDates(baseDate);
+    const visibleDates = getVisibleDates(dayOffset);
 
     const [settings] = useSettings();
     const {data: plans} = usePlans();
     const createPlan = useCreatePlan();
+    const createSlot = useCreateSlot();
+    const deleteSlot = useDeleteSlot();
     const updateSlot = useUpdateSlot();
     const regenerateSlot = useRegenerateSlot();
 
-    // Resolve active plan ID — prefer explicitly selected, then first draft/active
-    const activePlanId = selectedPlanId ?? plans?.find(
-        (p) => p.status === "active" || p.status === "draft"
-    )?.id ?? null;
-
-    // Full plan with slots from React Query (persists across navigation)
-    const {data: plan, isLoading: planLoading} = usePlan(activePlanId ?? undefined);
-
-    const handleCreateWeek = async () => {
-        setError(null);
-        try {
-            const slots_config = weekDates.flatMap((date) =>
-                MEAL_TYPES.map((meal_type) => ({date, meal_type, status: "skipped" as const}))
-            );
-            const created = await createPlan.mutateAsync({
-                name: `Week of ${weekDates[0]}`,
-                start_date: weekDates[0],
-                end_date: weekDates[6],
-                calorie_target: settings.calorieTarget,
-                slots_config,
+    // Auto-create the one persistent plan if none exists
+    const activePlan = plans?.find((p) => p.status === "active" || p.status === "draft");
+    useEffect(() => {
+        if (plans !== undefined && !activePlan && !createPlan.isPending) {
+            const far = addDays(new Date(), 3650);
+            createPlan.mutate({
+                name: "My Meal Plan",
+                start_date: TODAY,
+                end_date: far,
+                slots_config: [],
             });
-            setSelectedPlanId(created.id);
-        } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : "Failed to create week");
         }
+    }, [plans]);
+
+    const {data: plan, isLoading: planLoading} = usePlan(activePlan?.id);
+
+    const getSlot = (date: string, mealType: MealType) =>
+        plan?.slots.find((s) => s.date === date && s.meal_type === mealType);
+
+    const unfilledCount = plan?.slots.filter((s) => s.status === "planned" && !s.recipe_id).length ?? 0;
+
+    const handleAddSlot = async (date: string, mealType: MealType) => {
+        if (!activePlan) return;
+        await createSlot.mutateAsync({planId: activePlan.id, date, mealType});
     };
 
-    const handleGeneratePlan = async () => {
-        if (!activePlanId) return;
+    const handleRemoveSlot = async (slotId: string) => {
+        if (!activePlan) return;
+        await deleteSlot.mutateAsync({planId: activePlan.id, slotId});
+    };
+
+    const handleStatusChange = async (slotId: string, status: string) => {
+        if (!activePlan) return;
+        await updateSlot.mutateAsync({
+            planId: activePlan.id,
+            slotId,
+            body: {status: status as SlotStatus},
+        });
+    };
+
+    const handleRegenerate = async (slotId: string) => {
+        if (!activePlan) return;
+        await regenerateSlot.mutateAsync({planId: activePlan.id, slotId});
+    };
+
+    const handleGenerate = async () => {
+        if (!activePlan) return;
         setError(null);
         setGenerating(true);
         setGenStatus("Starting...");
         try {
             await new Promise<void>((resolve, reject) => {
                 apiPostStream(
-                    `/plans/${activePlanId}/generate`,
+                    `/plans/${activePlan.id}/generate`,
                     {
                         preferences: {
                             max_difficulty: settings.maxDifficulty,
@@ -99,73 +120,46 @@ export function WeeklyPlanner() {
                             household_size: settings.defaultServings,
                             dietary_restrictions: settings.dietaryRestrictions,
                             cuisine_preferences: settings.cuisinePreferences,
-                        }
+                        },
                     },
                     (raw) => {
                         try {
                             const event = JSON.parse(raw);
                             if (event.error) reject(new Error(event.error));
                             else if (event.message) setGenStatus(event.message);
-                        } catch { /* ignore parse errors */
-                        }
+                        } catch { /* ignore */ }
                     },
                     resolve,
                     reject,
                 );
             });
             setGenStatus("Loading your plan...");
-            // Refresh the plan in React Query cache
-            await qc.invalidateQueries({queryKey: ["plans", activePlanId]});
+            await qc.invalidateQueries({queryKey: ["plans", activePlan.id]});
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : "Failed to generate plan");
+            setError(e instanceof Error ? e.message : "Failed to generate");
         } finally {
             setGenerating(false);
             setGenStatus("");
         }
     };
 
-    const handleStatusChange = async (slotId: string, status: string) => {
-        if (!activePlanId) return;
-        await updateSlot.mutateAsync({
-            planId: activePlanId,
-            slotId,
-            body: {status: status as SlotStatus},
-        });
-    };
-
-    const handleRegenerate = async (slotId: string) => {
-        if (!activePlanId) return;
-        await regenerateSlot.mutateAsync({planId: activePlanId, slotId});
-    };
-
     const handleDragEnd = async (event: DragEndEvent) => {
         const {active, over} = event;
-        if (!over || !plan || !activePlanId) return;
-
+        if (!over || !plan || !activePlan) return;
         const draggedSlotId = active.id as string;
         const targetSlotId = (over.id as string).replace("drop-", "");
         if (draggedSlotId === targetSlotId) return;
-
         const draggedSlot = plan.slots.find((s) => s.id === draggedSlotId);
         const targetSlot = plan.slots.find((s) => s.id === targetSlotId);
         if (!draggedSlot || !targetSlot) return;
-
-        await updateSlot.mutateAsync({
-            planId: activePlanId,
-            slotId: draggedSlotId,
-            body: {recipe_id: targetSlot.recipe_id ?? undefined},
-        });
-        await updateSlot.mutateAsync({
-            planId: activePlanId,
-            slotId: targetSlotId,
-            body: {recipe_id: draggedSlot.recipe_id ?? undefined},
-        });
+        await updateSlot.mutateAsync({planId: activePlan.id, slotId: draggedSlotId, body: {recipe_id: targetSlot.recipe_id ?? undefined}});
+        await updateSlot.mutateAsync({planId: activePlan.id, slotId: targetSlotId, body: {recipe_id: draggedSlot.recipe_id ?? undefined}});
     };
 
-    const getSlot = (date: string, mealType: MealType) =>
-        plan?.slots.find((s) => s.date === date && s.meal_type === mealType);
-
-    const hasRecipes = plan?.slots.some((s) => s.recipe != null);
+    const navigate = (delta: number) => {
+        setDayOffset((o) => o + delta);
+        setSelectedDayIndex(0);
+    };
 
     return (
         <div className="space-y-4">
@@ -175,9 +169,7 @@ export function WeeklyPlanner() {
                     <h1 className="text-2xl font-bold text-gray-900">Weekly Planner</h1>
                     {plan && (
                         <p className="text-sm text-gray-500">
-                            {plan.name} •{" "}
-                            <Badge
-                                variant={plan.status === "active" ? "green" : plan.status === "draft" ? "yellow" : "gray"}>
+                            <Badge variant={plan.status === "active" ? "green" : plan.status === "draft" ? "yellow" : "gray"}>
                                 {plan.status}
                             </Badge>
                         </p>
@@ -185,63 +177,58 @@ export function WeeklyPlanner() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    {/* Day navigation */}
                     <div className="flex items-center gap-1">
-                        <button className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
-                                onClick={() => setWeekOffset((o) => o - 1)}>
+                        <button className="p-1.5 rounded hover:bg-gray-100 text-gray-500" onClick={() => navigate(-1)}>
                             <ChevronLeft size={18}/>
                         </button>
-                        <span className="text-sm text-gray-600 min-w-[120px] text-center">
-                            {weekDates[0]} – {weekDates[6]}
-                        </span>
-                        <button className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
-                                onClick={() => setWeekOffset((o) => o + 1)}>
+                        <button
+                            className="text-xs px-2 py-1 rounded hover:bg-gray-100 text-gray-500 min-w-[110px] text-center"
+                            onClick={() => { setDayOffset(0); setSelectedDayIndex(0); }}
+                        >
+                            {fmtDate(visibleDates[0])} – {fmtDate(visibleDates[6])}
+                        </button>
+                        <button className="p-1.5 rounded hover:bg-gray-100 text-gray-500" onClick={() => navigate(1)}>
                             <ChevronRight size={18}/>
                         </button>
                     </div>
 
-                    {!plan ? (
-                        <Button variant="outline" size="sm" onClick={handleCreateWeek} loading={createPlan.isPending}
-                                className="flex items-center gap-1">
-                            <Plus size={14}/>
-                            Create Week
-                        </Button>
-                    ) : (
-                        <Button size="sm" onClick={handleGeneratePlan} loading={generating}
-                                className="flex items-center gap-1">
-                            <Wand2 size={14}/>
-                            {hasRecipes ? "Regenerate Plan" : "Generate Plan"}
-                        </Button>
-                    )}
+                    <Button
+                        size="sm"
+                        onClick={handleGenerate}
+                        loading={generating}
+                        disabled={unfilledCount === 0}
+                        className="flex items-center gap-1"
+                    >
+                        <Wand2 size={14}/>
+                        Generate{unfilledCount > 0 ? ` (${unfilledCount})` : ""}
+                    </Button>
                 </div>
             </div>
 
             {error && (
-                <div
-                    className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center justify-between">
+                <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center justify-between">
                     <span>{error}</span>
                     <button className="ml-4 text-red-400 hover:text-red-600" onClick={() => setError(null)}>✕</button>
                 </div>
             )}
 
-            {/* ── Desktop grid ── */}
+            {/* Desktop grid */}
             <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full border-collapse">
                         <thead>
                         <tr>
                             <th className="w-20 p-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Meal</th>
-                            {weekDates.map((date, i) => {
+                            {visibleDates.map((date) => {
                                 const isToday = date === TODAY;
                                 return (
                                     <th key={date} className="p-2 text-center min-w-[130px]">
                                         <div className={`text-xs font-medium uppercase ${isToday ? "text-primary-600" : "text-gray-500"}`}>
-                                            {DAY_LABELS[i]}
+                                            {fmtDayLabel(date)}
                                         </div>
                                         <div className={`text-sm font-semibold ${isToday ? "text-primary-700" : "text-gray-800"}`}>
-                                            {new Date(date + "T12:00:00").toLocaleDateString("en-US", {
-                                                month: "short",
-                                                day: "numeric",
-                                            })}
+                                            {fmtDate(date)}
                                         </div>
                                         {isToday && (
                                             <div className="flex justify-center mt-0.5">
@@ -257,21 +244,26 @@ export function WeeklyPlanner() {
                         {MEAL_TYPES.map((mealType) => (
                             <tr key={mealType} className="border-t border-gray-100">
                                 <td className="p-2 text-xs font-medium text-gray-500 capitalize align-top pt-3">{mealType}</td>
-                                {weekDates.map((date) => {
+                                {visibleDates.map((date) => {
                                     const slot = getSlot(date, mealType);
                                     return (
                                         <td key={date} className="p-1.5 align-top group">
                                             {slot ? (
                                                 <MealSlotCard
                                                     slot={slot}
-                                                    planId={activePlanId!}
+                                                    planId={activePlan!.id}
                                                     onStatusChange={handleStatusChange}
                                                     onRegenerate={handleRegenerate}
+                                                    onRemove={handleRemoveSlot}
                                                     isLoading={regenerateSlot.isPending && regenerateSlot.variables?.slotId === slot.id}
                                                 />
                                             ) : (
                                                 <div
-                                                    className="min-h-[60px] rounded-lg border border-dashed border-gray-200 bg-gray-50"/>
+                                                    onClick={() => handleAddSlot(date, mealType)}
+                                                    className="min-h-[80px] rounded-lg border border-dashed border-gray-200 bg-gray-50 flex items-center justify-center cursor-pointer hover:border-primary-300 hover:bg-primary-50 transition-colors group/add"
+                                                >
+                                                    <span className="text-xl font-light text-gray-300 group-hover/add:text-primary-400 transition-colors">+</span>
+                                                </div>
                                             )}
                                         </td>
                                     );
@@ -283,11 +275,10 @@ export function WeeklyPlanner() {
                 </div>
             </DndContext>
 
-            {/* ── Mobile day-by-day view ── */}
+            {/* Mobile day-by-day view */}
             <div className="sm:hidden space-y-3">
-                {/* Day selector */}
                 <div className="flex gap-1 overflow-x-auto pb-1 -mx-4 px-4">
-                    {weekDates.map((date, i) => {
+                    {visibleDates.map((date, i) => {
                         const hasRecipe = MEAL_TYPES.some((mt) => getSlot(date, mt)?.recipe);
                         const isToday = date === TODAY;
                         const isSelected = selectedDayIndex === i;
@@ -304,7 +295,7 @@ export function WeeklyPlanner() {
                                             : "bg-gray-100 text-gray-600",
                                 ].join(" ")}
                             >
-                                <span>{DAY_LABELS[i]}</span>
+                                <span>{fmtDayLabel(date)}</span>
                                 <span className="font-semibold">
                                     {new Date(date + "T12:00:00").toLocaleDateString("en-US", {day: "numeric"})}
                                 </span>
@@ -319,24 +310,28 @@ export function WeeklyPlanner() {
                     })}
                 </div>
 
-                {/* Meals for selected day */}
                 <div className="space-y-2">
                     {MEAL_TYPES.map((mealType) => {
-                        const slot = getSlot(weekDates[selectedDayIndex], mealType);
+                        const slot = getSlot(visibleDates[selectedDayIndex], mealType);
                         return (
                             <div key={mealType}>
-                                <div
-                                    className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1 px-1">{mealType}</div>
+                                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1 px-1">{mealType}</div>
                                 {slot ? (
                                     <MealSlotCard
                                         slot={slot}
-                                        planId={activePlanId!}
+                                        planId={activePlan!.id}
                                         onStatusChange={handleStatusChange}
                                         onRegenerate={handleRegenerate}
+                                        onRemove={handleRemoveSlot}
                                         isLoading={regenerateSlot.isPending && regenerateSlot.variables?.slotId === slot.id}
                                     />
                                 ) : (
-                                    <div className="h-14 rounded-xl border border-dashed border-gray-200 bg-gray-50"/>
+                                    <div
+                                        onClick={() => handleAddSlot(visibleDates[selectedDayIndex], mealType)}
+                                        className="h-14 rounded-xl border border-dashed border-gray-200 bg-gray-50 flex items-center justify-center cursor-pointer hover:border-primary-300 hover:bg-primary-50 transition-colors group/add"
+                                    >
+                                        <span className="text-xl font-light text-gray-300 group-hover/add:text-primary-400 transition-colors">+</span>
+                                    </div>
                                 )}
                             </div>
                         );
@@ -344,7 +339,7 @@ export function WeeklyPlanner() {
                 </div>
             </div>
 
-            {planLoading && !plan && (
+            {planLoading && (
                 <div className="hidden sm:grid grid-cols-8 gap-1.5 animate-pulse">
                     <div/>
                     {Array.from({length: 7}).map((_, i) => (
@@ -357,31 +352,13 @@ export function WeeklyPlanner() {
                 </div>
             )}
 
-            {!planLoading && !plan && (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mb-4">
-                        <CalendarDays size={32} className="text-primary-400"/>
-                    </div>
-                    <h2 className="text-lg font-semibold text-gray-800 mb-1">No plan for this week</h2>
-                    <p className="text-sm text-gray-500 mb-6 max-w-xs">
-                        Create a week to start planning meals, then generate recipes with AI.
-                    </p>
-                    <Button onClick={handleCreateWeek} loading={createPlan.isPending} className="flex items-center gap-2">
-                        <Plus size={16}/>
-                        Create this week
-                    </Button>
-                </div>
-            )}
-
             {generating && (
                 <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl p-6 shadow-xl text-center max-w-sm w-full mx-4">
                         <div className="flex justify-center mb-4">
                             <svg className="animate-spin h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                        strokeWidth="4"/>
-                                <path className="opacity-75" fill="currentColor"
-                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                             </svg>
                         </div>
                         <p className="text-gray-800 font-semibold mb-1">Generating your meal plan</p>

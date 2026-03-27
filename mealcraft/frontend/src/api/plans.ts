@@ -1,4 +1,4 @@
-import {apiGet, apiPatch, apiPost, apiPut} from "./client";
+import {apiDelete, apiGet, apiPatch, apiPost, apiPut} from "./client";
 import type {CreatePlanRequest, GroceryList, MealPlan, MealPlanListItem, MealSlot, PrepPlan, UpdateSlotRequest,} from "@/types";
 
 export const plansApi = {
@@ -34,6 +34,12 @@ export const plansApi = {
 
     patchPrepPlan: (planId: string, body: { completed_tasks: string[] }) =>
         apiPatch<PrepPlan>(`/plans/${planId}/prep-plan/current`, body),
+
+    createSlot: (planId: string, date: string, mealType: string) =>
+        apiPost(`/plans/${planId}/slots`, {date, meal_type: mealType}),
+
+    deleteSlot: (planId: string, slotId: string) =>
+        apiDelete(`/plans/${planId}/slots/${slotId}`),
 
     getCurrentGroceryList: (planId: string) =>
         apiGet<GroceryList>(`/plans/${planId}/grocery-list/current`),

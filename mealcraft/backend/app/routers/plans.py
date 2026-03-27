@@ -114,6 +114,43 @@ async def update_plan(
     return await _load_plan_with_slots(plan_id, db)
 
 
+@router.post("/{plan_id}/slots", status_code=201)
+async def create_slot(
+    plan_id: str,
+    body: SlotConfig,
+    db: AsyncSession = Depends(get_db),
+):
+    plan_result = await db.execute(select(MealPlan).where(MealPlan.id == plan_id))
+    if not plan_result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Plan not found")
+    slot = MealSlot(
+        meal_plan_id=plan_id,
+        date=body.date,
+        meal_type=body.meal_type,
+        status="planned",
+        servings=2.0,
+    )
+    db.add(slot)
+    await db.flush()
+    return {"id": slot.id, "date": str(slot.date), "meal_type": slot.meal_type,
+            "status": slot.status, "recipe_id": None, "servings": float(slot.servings), "recipe": None}
+
+
+@router.delete("/{plan_id}/slots/{slot_id}", status_code=204)
+async def delete_slot(
+    plan_id: str,
+    slot_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(MealSlot).where(MealSlot.id == slot_id, MealSlot.meal_plan_id == plan_id)
+    )
+    slot = result.scalar_one_or_none()
+    if not slot:
+        raise HTTPException(status_code=404, detail="Slot not found")
+    await db.delete(slot)
+
+
 @router.put("/{plan_id}/slots/{slot_id}", response_model=MealSlotOut)
 async def update_slot(
     plan_id: str,

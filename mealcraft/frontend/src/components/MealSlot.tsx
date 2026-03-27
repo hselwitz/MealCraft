@@ -9,31 +9,30 @@ interface MealSlotProps {
     planId: string;
     onStatusChange: (slotId: string, status: string) => void;
     onRegenerate: (slotId: string) => void;
+    onRemove: (slotId: string) => void;
     isLoading?: boolean;
 }
 
 const statusColors: Record<string, string> = {
     planned: "bg-white",
     cooked: "bg-green-50",
-    skipped: "bg-gray-50 border-dashed border-gray-200 opacity-50 hover:opacity-100",
     eating_out: "bg-orange-50",
 };
 
 export function MealSlotCard({
-                                 slot,
-                                 planId,
-                                 onStatusChange,
-                                 onRegenerate,
-                                 isLoading,
-                             }: MealSlotProps) {
+    slot,
+    planId,
+    onStatusChange,
+    onRegenerate,
+    onRemove,
+    isLoading,
+}: MealSlotProps) {
     const navigate = useNavigate();
 
-    const {
-        attributes,
-        listeners,
-        setNodeRef: setDraggableRef,
-        isDragging,
-    } = useDraggable({id: slot.id, data: {slot}});
+    const {attributes, listeners, setNodeRef: setDraggableRef, isDragging} = useDraggable({
+        id: slot.id,
+        data: {slot},
+    });
 
     const {setNodeRef: setDroppableRef, isOver} = useDroppable({
         id: `drop-${slot.id}`,
@@ -42,19 +41,14 @@ export function MealSlotCard({
 
     return (
         <div
-            ref={(el) => {
-                setDraggableRef(el);
-                setDroppableRef(el);
-            }}
+            ref={(el) => { setDraggableRef(el); setDroppableRef(el); }}
             className={[
-                "relative rounded-lg border transition-all min-h-[80px] text-xs",
-                slot.status === "skipped" ? "p-0 cursor-pointer" : "p-2",
+                "relative rounded-lg border transition-all min-h-[80px] p-2 text-xs",
                 statusColors[slot.status] ?? "bg-white",
                 isDragging ? "opacity-50 shadow-lg scale-95" : "",
                 isOver ? "ring-2 ring-primary-400 border-primary-300" : "border-gray-200",
                 isLoading ? "animate-pulse" : "",
             ].join(" ")}
-            onClick={slot.status === "skipped" ? () => onStatusChange(slot.id, "planned") : undefined}
             {...attributes}
         >
             {slot.recipe ? (
@@ -81,10 +75,8 @@ export function MealSlotCard({
                     </div>
                     <Badge
                         variant={
-                            slot.recipe.difficulty === "easy"
-                                ? "green"
-                                : slot.recipe.difficulty === "medium"
-                                    ? "yellow"
+                            slot.recipe.difficulty === "easy" ? "green"
+                                : slot.recipe.difficulty === "medium" ? "yellow"
                                     : "red"
                         }
                         className="mt-1"
@@ -97,15 +89,11 @@ export function MealSlotCard({
                     <Utensils size={12}/>
                     <span>Eating out</span>
                 </div>
-            ) : slot.status === "skipped" ? (
-                <div className="absolute inset-0 flex items-center justify-center text-gray-300 hover:text-primary-400 transition-colors">
-                    <span className="text-xl font-light leading-none">+</span>
-                </div>
             ) : (
-                <div className="text-gray-400 italic" {...listeners}>No meal planned</div>
+                <div className="text-gray-400 italic" {...listeners}>No meal yet</div>
             )}
 
-            {/* Action buttons */}
+            {/* Regenerate button */}
             <div
                 className="absolute top-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={(e) => e.stopPropagation()}
@@ -121,36 +109,31 @@ export function MealSlotCard({
                 )}
             </div>
 
-            {/* Status toggle buttons — hidden for bare skipped slots */}
-            {slot.status !== "skipped" && (
-                <div
-                    className="flex gap-1 mt-1.5"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    {slot.status !== "eating_out" && (
-                        <button
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 hover:bg-orange-200"
-                            onClick={() => onStatusChange(slot.id, "eating_out")}
-                        >
-                            Out
-                        </button>
-                    )}
+            {/* Status buttons */}
+            <div className="flex gap-1 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                {slot.status !== "eating_out" && (
                     <button
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        onClick={() => onStatusChange(slot.id, "skipped")}
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 hover:bg-orange-200"
+                        onClick={() => onStatusChange(slot.id, "eating_out")}
                     >
-                        Remove
+                        Out
                     </button>
-                    {slot.status === "eating_out" && (
-                        <button
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 hover:bg-green-200"
-                            onClick={() => onStatusChange(slot.id, "planned")}
-                        >
-                            Plan
-                        </button>
-                    )}
-                </div>
-            )}
+                )}
+                {slot.status === "eating_out" && (
+                    <button
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 hover:bg-green-200"
+                        onClick={() => onStatusChange(slot.id, "planned")}
+                    >
+                        Plan
+                    </button>
+                )}
+                <button
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600"
+                    onClick={() => onRemove(slot.id)}
+                >
+                    Remove
+                </button>
+            </div>
         </div>
     );
 }
