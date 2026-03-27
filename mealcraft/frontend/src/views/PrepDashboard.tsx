@@ -148,7 +148,7 @@ export function PrepDashboard() {
                             <Card key={group}>
                                 <CardHeader>
                                     <h3 className="font-semibold text-gray-800">
-                                        {group.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())}
+                                        {group.replace(/_/g, " ").replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())}
                                     </h3>
                                 </CardHeader>
                                 <CardBody className="space-y-2 py-2">
