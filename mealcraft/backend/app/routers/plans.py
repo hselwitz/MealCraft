@@ -20,6 +20,7 @@ from app.schemas.plan import (
     MealPlanListItem,
     PrepPlanPatch,
     PrepPlanRequest,
+    SlotConfig,
 )
 from app.services.grocery import GroceryService
 from app.services.planner import PlannerService
