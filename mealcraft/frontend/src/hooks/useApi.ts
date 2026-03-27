@@ -225,9 +225,10 @@ export function useToggleGroceryItem() {
             listId: string;
             itemId: string;
             checked: boolean;
+            planId: string;
         }) => groceryApi.updateItem(listId, itemId, {checked}),
         onSuccess: (_data, vars) => {
-            qc.invalidateQueries({queryKey: ["grocery", vars.listId]});
+            qc.invalidateQueries({queryKey: ["grocery", "current", vars.planId]});
         },
     });
 }

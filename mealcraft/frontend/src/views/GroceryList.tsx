@@ -40,11 +40,12 @@ export function GroceryList() {
     };
 
     const handleToggle = async (item: GroceryItem) => {
-        if (!groceryList?.id) return;
+        if (!groceryList?.id || !activePlan) return;
         await toggleItem.mutateAsync({
             listId: groceryList.id,
             itemId: item.id,
             checked: !item.checked,
+            planId: activePlan.id,
         });
     };
 
