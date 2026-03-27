@@ -99,6 +99,7 @@ async def get_recipe(recipe_id: str, db: AsyncSession = Depends(get_db)):
 @router.delete("/{recipe_id}", status_code=204)
 async def delete_recipe(recipe_id: str, db: AsyncSession = Depends(get_db)):
     from app.models.meal_plan import MealSlot
+
     # Refuse if any slot still references this recipe
     linked = await db.execute(select(MealSlot).where(MealSlot.recipe_id == recipe_id).limit(1))
     if linked.scalar_one_or_none():

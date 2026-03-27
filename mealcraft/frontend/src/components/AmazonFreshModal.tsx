@@ -44,7 +44,8 @@ export function AmazonFreshModal({items, onClose, onCheck}: Props) {
             />
 
             {/* Panel */}
-            <div className="relative w-full sm:max-w-lg max-h-[85vh] flex flex-col bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden">
+            <div
+                className="relative w-full sm:max-w-lg max-h-[85vh] flex flex-col bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 bg-orange-500 text-white shrink-0">
                     <div className="flex items-center gap-2">

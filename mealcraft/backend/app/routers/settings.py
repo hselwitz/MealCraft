@@ -18,8 +18,14 @@ DEFAULT_SETTINGS = {
     "cuisinePreferences": [],
     "dietaryRestrictions": [],
     "pantryStaples": [
-        "salt", "black pepper", "olive oil", "vegetable oil",
-        "sugar", "all-purpose flour", "baking soda", "baking powder",
+        "salt",
+        "black pepper",
+        "olive oil",
+        "vegetable oil",
+        "sugar",
+        "all-purpose flour",
+        "baking soda",
+        "baking powder",
     ],
 }
 

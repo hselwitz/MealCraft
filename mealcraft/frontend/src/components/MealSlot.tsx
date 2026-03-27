@@ -18,12 +18,12 @@ const statusColors: Record<string, string> = {
 };
 
 export function MealSlotCard({
-    slot,
-    planId,
-    onRegenerate,
-    onRemove,
-    isLoading,
-}: MealSlotProps) {
+                                 slot,
+                                 planId,
+                                 onRegenerate,
+                                 onRemove,
+                                 isLoading,
+                             }: MealSlotProps) {
     const navigate = useNavigate();
 
     const {attributes, listeners, setNodeRef: setDraggableRef, isDragging} = useDraggable({
@@ -38,7 +38,10 @@ export function MealSlotCard({
 
     return (
         <div
-            ref={(el) => { setDraggableRef(el); setDroppableRef(el); }}
+            ref={(el) => {
+                setDraggableRef(el);
+                setDroppableRef(el);
+            }}
             className={[
                 "relative rounded-lg border transition-all min-h-[80px] p-2 text-xs",
                 statusColors[slot.status] ?? "bg-white",

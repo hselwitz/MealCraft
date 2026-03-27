@@ -111,9 +111,11 @@ export function RecipesList() {
                     {showAll
                         ? <p>No recipes yet.</p>
                         : <><p>No recipes in your current plan.</p>
-                            <button onClick={() => setShowAll(true)} className="text-sm text-primary-500 mt-1 hover:underline">
+                            <button onClick={() => setShowAll(true)}
+                                    className="text-sm text-primary-500 mt-1 hover:underline">
                                 Browse all recipes
-                            </button></>
+                            </button>
+                        </>
                     }
                 </div>
             )}

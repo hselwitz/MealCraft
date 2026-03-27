@@ -133,8 +133,15 @@ async def create_slot(
     )
     db.add(slot)
     await db.flush()
-    return {"id": slot.id, "date": str(slot.date), "meal_type": slot.meal_type,
-            "status": slot.status, "recipe_id": None, "servings": float(slot.servings), "recipe": None}
+    return {
+        "id": slot.id,
+        "date": str(slot.date),
+        "meal_type": slot.meal_type,
+        "status": slot.status,
+        "recipe_id": None,
+        "servings": float(slot.servings),
+        "recipe": None,
+    }
 
 
 @router.delete("/{plan_id}/slots/{slot_id}", status_code=204)

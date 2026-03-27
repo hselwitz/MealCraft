@@ -70,7 +70,8 @@ export async function apiDelete(path: string): Promise<void> {
         try {
             const body = await res.json();
             detail = body.detail || detail;
-        } catch { /* ignore */ }
+        } catch { /* ignore */
+        }
         throw new ApiError(res.status, detail);
     }
 }

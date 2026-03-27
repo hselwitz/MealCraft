@@ -1,5 +1,13 @@
 import {apiDelete, apiGet, apiPatch, apiPost, apiPut} from "./client";
-import type {CreatePlanRequest, GroceryList, MealPlan, MealPlanListItem, MealSlot, PrepPlan, UpdateSlotRequest,} from "@/types";
+import type {
+    CreatePlanRequest,
+    GroceryList,
+    MealPlan,
+    MealPlanListItem,
+    MealSlot,
+    PrepPlan,
+    UpdateSlotRequest,
+} from "@/types";
 
 export const plansApi = {
     list: (cursor?: string) =>
@@ -27,7 +35,10 @@ export const plansApi = {
         }),
 
     generateGroceryList: (planId: string, pantryStaples?: string[]) =>
-        apiPost<{ grocery_list_id: string; status: string }>(`/plans/${planId}/grocery-list`, pantryStaples ? {pantry_staples: pantryStaples} : undefined),
+        apiPost<{
+            grocery_list_id: string;
+            status: string
+        }>(`/plans/${planId}/grocery-list`, pantryStaples ? {pantry_staples: pantryStaples} : undefined),
 
     getCurrentPrepPlan: (planId: string) =>
         apiGet<PrepPlan>(`/plans/${planId}/prep-plan/current`),
