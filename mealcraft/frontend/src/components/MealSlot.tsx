@@ -1,5 +1,5 @@
 import {useNavigate} from "react-router-dom";
-import {GripVertical, RefreshCw, Utensils} from "lucide-react";
+import {GripVertical, RefreshCw} from "lucide-react";
 import {useDraggable, useDroppable} from "@dnd-kit/core";
 import type {MealSlot as MealSlotType} from "@/types";
 import {Badge} from "./ui/badge";
@@ -7,7 +7,6 @@ import {Badge} from "./ui/badge";
 interface MealSlotProps {
     slot: MealSlotType;
     planId: string;
-    onStatusChange: (slotId: string, status: string) => void;
     onRegenerate: (slotId: string) => void;
     onRemove: (slotId: string) => void;
     isLoading?: boolean;
@@ -16,13 +15,11 @@ interface MealSlotProps {
 const statusColors: Record<string, string> = {
     planned: "bg-white",
     cooked: "bg-green-50",
-    eating_out: "bg-orange-50",
 };
 
 export function MealSlotCard({
     slot,
     planId,
-    onStatusChange,
     onRegenerate,
     onRemove,
     isLoading,
@@ -84,11 +81,6 @@ export function MealSlotCard({
                         {slot.recipe.difficulty}
                     </Badge>
                 </div>
-            ) : slot.status === "eating_out" ? (
-                <div className="flex items-center gap-1 text-orange-600" {...listeners}>
-                    <Utensils size={12}/>
-                    <span>Eating out</span>
-                </div>
             ) : (
                 <div className="text-gray-400 italic" {...listeners}>No meal yet</div>
             )}
@@ -111,22 +103,6 @@ export function MealSlotCard({
 
             {/* Status buttons */}
             <div className="flex gap-1 mt-1.5" onClick={(e) => e.stopPropagation()}>
-                {slot.status !== "eating_out" && (
-                    <button
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 hover:bg-orange-200"
-                        onClick={() => onStatusChange(slot.id, "eating_out")}
-                    >
-                        Out
-                    </button>
-                )}
-                {slot.status === "eating_out" && (
-                    <button
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 hover:bg-green-200"
-                        onClick={() => onStatusChange(slot.id, "planned")}
-                    >
-                        Plan
-                    </button>
-                )}
                 <button
                     className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600"
                     onClick={() => onRemove(slot.id)}

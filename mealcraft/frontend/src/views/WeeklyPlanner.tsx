@@ -12,7 +12,7 @@ import {
 } from "@/hooks/useApi";
 import {apiPostStream} from "@/api/client";
 import {useSettings} from "@/hooks/useSettings";
-import type {MealType, SlotStatus} from "@/types";
+import type {MealType} from "@/types";
 import {Button} from "@/components/ui/button";
 import {MealSlotCard} from "@/components/MealSlot";
 import {Badge} from "@/components/ui/badge";
@@ -87,15 +87,6 @@ export function WeeklyPlanner() {
     const handleRemoveSlot = async (slotId: string) => {
         if (!activePlan) return;
         await deleteSlot.mutateAsync({planId: activePlan.id, slotId});
-    };
-
-    const handleStatusChange = async (slotId: string, status: string) => {
-        if (!activePlan) return;
-        await updateSlot.mutateAsync({
-            planId: activePlan.id,
-            slotId,
-            body: {status: status as SlotStatus},
-        });
     };
 
     const handleRegenerate = async (slotId: string) => {
@@ -252,7 +243,6 @@ export function WeeklyPlanner() {
                                                 <MealSlotCard
                                                     slot={slot}
                                                     planId={activePlan!.id}
-                                                    onStatusChange={handleStatusChange}
                                                     onRegenerate={handleRegenerate}
                                                     onRemove={handleRemoveSlot}
                                                     isLoading={regenerateSlot.isPending && regenerateSlot.variables?.slotId === slot.id}
@@ -320,7 +310,6 @@ export function WeeklyPlanner() {
                                     <MealSlotCard
                                         slot={slot}
                                         planId={activePlan!.id}
-                                        onStatusChange={handleStatusChange}
                                         onRegenerate={handleRegenerate}
                                         onRemove={handleRemoveSlot}
                                         isLoading={regenerateSlot.isPending && regenerateSlot.variables?.slotId === slot.id}
