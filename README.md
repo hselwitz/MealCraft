@@ -5,7 +5,14 @@ smart grocery list, and help you turn leftovers into tomorrow's lunch — all op
 spend in the kitchen.
 
 ---
-![img_1.png](mealcraft/img_1.png)
+<table>
+  <tr>
+    <td><img src="mealcraft/planner.jpg" width="200" alt="Planner"></td>
+    <td><img src="mealcraft/grocery_list.jpg" width="200" alt="Grocery List"></td>
+    <td><img src="mealcraft/prep.jpg" width="200" alt="Prep Plan"></td>
+    <td><img src="mealcraft/recipe.jpg" width="200" alt="Recipe"></td>
+  </tr>
+</table>
 
 ## What it does
 
