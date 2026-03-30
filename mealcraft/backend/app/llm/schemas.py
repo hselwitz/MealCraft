@@ -57,6 +57,7 @@ class PrepTaskOutput(BaseModel):
     is_active: bool
     batch_group: Optional[str] = None
     depends_on: list[str] = []
+    tip: Optional[str] = None
 
 
 class PrepPlanOutput(BaseModel):

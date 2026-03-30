@@ -169,6 +169,7 @@ OPTIMIZE_PREP_PLAN_TOOL = {
                         "is_active": {"type": "boolean"},
                         "batch_group": {"type": "string", "nullable": True},
                         "depends_on": {"type": "array", "items": {"type": "string"}},
+                        "tip": {"type": "string", "nullable": True, "description": "A short, practical tip for this step — only include if genuinely non-obvious (e.g. technique, temperature, common mistake). Omit for self-explanatory tasks."},
                     },
                     "required": ["task_name", "duration_min", "is_active", "depends_on"],
                 },

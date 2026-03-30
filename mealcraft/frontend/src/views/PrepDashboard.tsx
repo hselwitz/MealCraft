@@ -180,7 +180,7 @@ export function PrepDashboard() {
                                       : "text-gray-800",
                               ].join(" ")}
                           >
-                            {task.task_name}
+                            {task.task_name.replace(/_/g, " ")}
                           </span>
                                                     <span
                                                         className="text-xs text-gray-400">{task.duration_min}min</span>
@@ -188,9 +188,12 @@ export function PrepDashboard() {
                                                         {task.is_active ? "active" : "passive"}
                                                     </Badge>
                                                 </div>
+                                                {task.tip && (
+                                                    <p className="text-xs text-blue-500 mt-0.5">{task.tip}</p>
+                                                )}
                                                 {task.depends_on.length > 0 && (
                                                     <p className="text-xs text-gray-400 mt-0.5">
-                                                        After: {task.depends_on.join(", ")}
+                                                        After: {task.depends_on.map((d) => d.replace(/_/g, " ")).join(", ")}
                                                     </p>
                                                 )}
                                             </div>

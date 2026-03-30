@@ -193,6 +193,7 @@ export interface PrepTask {
     is_active: boolean;
     batch_group: string | null;
     depends_on: string[];
+    tip?: string | null;
 }
 
 export interface PrepPlan {
