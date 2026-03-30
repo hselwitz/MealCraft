@@ -321,7 +321,7 @@ async def generate_prep_plan(
     if not recipes_data:
         raise HTTPException(status_code=400, detail="No recipes found for this plan")
 
-    prep_plan = await llm.optimize_prep_plan(recipes_data, body.time_windows)
+    prep_plan = await llm.optimize_prep_plan(recipes_data)
 
     # Persist — replace any existing prep plan for this plan
     existing = await db.execute(

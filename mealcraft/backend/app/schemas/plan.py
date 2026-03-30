@@ -105,9 +105,7 @@ class FeedbackOut(BaseModel):
 
 
 class PrepPlanRequest(BaseModel):
-    time_windows: List[str] = Field(
-        default_factory=lambda: ["Sunday afternoon", "Wednesday evening"]
-    )
+    pass
 
 
 class PrepPlanPatch(BaseModel):

@@ -24,11 +24,17 @@ You are MealCraft, a kitchen efficiency expert. Create an optimized prep plan th
 
 {% endfor %}
 
-## Available Time Windows
+## Scheduling Context
 
-{% for window in time_windows %}
-    - {{ window }}
-{% endfor %}
+- **Today:** {{ today }} ({{ today_weekday }})
+- **First scheduled meal:** {{ first_meal_date }} ({{ first_meal_weekday }})
+- **Last scheduled meal:** {{ last_meal_date }} ({{ last_meal_weekday }})
+
+Suggest `recommended_sessions` that are realistic given this schedule. Sessions must be on or after today and before the first meal they cover. Consider:
+- How much time is available before the first meal
+- Whether a single session covers everything or a mid-week top-up makes sense
+- Realistic session lengths (1-3 hours max)
+- Use specific day names and times (e.g. "Sunday evening 7-8:30pm") not generic labels
 
 ## Optimization Goals
 

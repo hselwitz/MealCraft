@@ -17,10 +17,7 @@ export function PrepDashboard() {
 
     const handleGenerate = async () => {
         if (!activePlan) return;
-        await generatePrep.mutateAsync({
-            planId: activePlan.id,
-            timeWindows: ["Sunday afternoon 2-4pm", "Wednesday evening 6-7pm"],
-        });
+        await generatePrep.mutateAsync({planId: activePlan.id});
     };
 
     const toggleTask = async (taskName: string) => {

@@ -29,10 +29,8 @@ export const plansApi = {
     generate: (planId: string, preferences?: object) =>
         apiPost<MealPlan>(`/plans/${planId}/generate`, {preferences: preferences ?? {}}),
 
-    generatePrepPlan: (planId: string, timeWindows?: string[]) =>
-        apiPost<PrepPlan>(`/plans/${planId}/prep-plan`, {
-            time_windows: timeWindows ?? ["Sunday afternoon", "Wednesday evening"],
-        }),
+    generatePrepPlan: (planId: string) =>
+        apiPost<PrepPlan>(`/plans/${planId}/prep-plan`, {}),
 
     generateGroceryList: (planId: string, pantryStaples?: string[], ingredientOverlap?: string) =>
         apiPost<{

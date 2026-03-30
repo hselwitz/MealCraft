@@ -147,11 +147,28 @@ class LLMClient:
         data = _extract_tool_input(response, "create_weekly_plan")
         return WeeklyPlanOutput.model_validate(data)
 
-    async def optimize_prep_plan(self, recipes: list, time_windows: list) -> PrepPlanOutput:
+    async def optimize_prep_plan(self, recipes: list) -> PrepPlanOutput:
+        from datetime import date as _date
+        today = _date.today()
+        scheduled_dates = sorted(
+            {r["scheduled_date"] for r in recipes if r.get("scheduled_date")},
+        )
+        first_meal_date = scheduled_dates[0] if scheduled_dates else str(today)
+        last_meal_date = scheduled_dates[-1] if scheduled_dates else str(today)
+
+        def _weekday(d: str) -> str:
+            from datetime import datetime
+            return datetime.strptime(d, "%Y-%m-%d").strftime("%A")
+
         prompt = _render(
             "prep_plan.j2",
             recipes=recipes,
-            time_windows=time_windows,
+            today=str(today),
+            today_weekday=today.strftime("%A"),
+            first_meal_date=first_meal_date,
+            first_meal_weekday=_weekday(first_meal_date),
+            last_meal_date=last_meal_date,
+            last_meal_weekday=_weekday(last_meal_date),
         )
         response = await self._client.messages.create(
             model=MODEL,

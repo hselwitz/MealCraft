@@ -110,8 +110,8 @@ export function usePatchPrepPlan() {
 export function useGeneratePrepPlan() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: ({planId, timeWindows}: { planId: string; timeWindows?: string[] }) =>
-            plansApi.generatePrepPlan(planId, timeWindows),
+        mutationFn: ({planId}: { planId: string }) =>
+            plansApi.generatePrepPlan(planId),
         onSuccess: (_data, vars) => qc.invalidateQueries({queryKey: ["prep-plan", vars.planId]}),
     });
 }
