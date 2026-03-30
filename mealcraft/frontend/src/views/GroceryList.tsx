@@ -36,6 +36,7 @@ export function GroceryList() {
         await generateList.mutateAsync({
             planId: activePlan.id,
             pantryStaples: settings.pantryStaples,
+            ingredientOverlap: settings.ingredientOverlap,
         });
     };
 

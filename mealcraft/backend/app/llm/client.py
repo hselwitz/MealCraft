@@ -164,7 +164,7 @@ class LLMClient:
         return PrepPlanOutput.model_validate(data)
 
     async def generate_grocery_list(
-        self, ingredients: list, pantry: list, leftovers: list
+        self, ingredients: list, pantry: list, leftovers: list, ingredient_overlap: str = "medium"
     ) -> GroceryListOutput:
         # Strip heavy fields before sending to reduce prompt size
         slim_ingredients = [
@@ -176,6 +176,7 @@ class LLMClient:
             ingredients=slim_ingredients,
             pantry_items=pantry,
             leftover_inventory=leftovers,
+            ingredient_overlap=ingredient_overlap,
         )
         messages = [{"role": "user", "content": prompt}]
         for attempt in range(2):

@@ -128,8 +128,12 @@ export function useCurrentGroceryList(planId: string | undefined) {
 export function useGenerateGroceryList() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: ({planId, pantryStaples}: { planId: string; pantryStaples?: string[] }) =>
-            plansApi.generateGroceryList(planId, pantryStaples),
+        mutationFn: ({planId, pantryStaples, ingredientOverlap}: {
+            planId: string;
+            pantryStaples?: string[];
+            ingredientOverlap?: string
+        }) =>
+            plansApi.generateGroceryList(planId, pantryStaples, ingredientOverlap),
         onSuccess: (_data, vars) => qc.invalidateQueries({queryKey: ["grocery", "current", vars.planId]}),
     });
 }

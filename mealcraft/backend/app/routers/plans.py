@@ -430,7 +430,10 @@ async def generate_grocery_list(
         raise HTTPException(status_code=404, detail="Plan not found")
 
     pantry_staples = body.get("pantry_staples") or None
+    ingredient_overlap = body.get("ingredient_overlap", "medium")
     grocery_svc = GroceryService(db, llm)
-    grocery_list = await grocery_svc.generate_for_plan(plan_id, pantry_staples=pantry_staples)
+    grocery_list = await grocery_svc.generate_for_plan(
+        plan_id, pantry_staples=pantry_staples, ingredient_overlap=ingredient_overlap
+    )
 
     return {"grocery_list_id": grocery_list.id, "status": "generated"}

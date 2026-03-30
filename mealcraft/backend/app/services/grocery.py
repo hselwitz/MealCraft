@@ -36,6 +36,7 @@ class GroceryService:
         self,
         plan_id: str,
         pantry_staples: list[str] | None = None,
+        ingredient_overlap: str = "medium",
     ) -> GroceryList:
         """Run the 7-step grocery generation pipeline."""
         if pantry_staples is None:
@@ -139,6 +140,7 @@ class GroceryService:
                 ingredients=list(aggregated.values()),
                 pantry=pantry_staples,
                 leftovers=leftover_inventory,
+                ingredient_overlap=ingredient_overlap,
             )
         else:
             from app.llm.schemas import GroceryListOutput
