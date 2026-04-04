@@ -1,8 +1,10 @@
 services:
-  backend:
+  app:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
+    ports:
+      - "3080:8000"
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///./data/mealcraft.db}
@@ -11,8 +13,6 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
       - mealcraft_data:/app/data
-    networks:
-      - internal
     healthcheck:
       test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
       interval: 30s
@@ -21,22 +21,5 @@ services:
       start_period: 30s
     restart: unless-stopped
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3080:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-    networks:
-      - internal
-    restart: unless-stopped
-
 volumes:
   mealcraft_data:
-
-networks:
-  internal:
-    driver: bridge

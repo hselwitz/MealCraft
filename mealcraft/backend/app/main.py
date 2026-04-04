@@ -13,9 +13,12 @@ from app.routers import (
     feedback_router,
     settings_router,
 )
+from pathlib import Path
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 logging.basicConfig(
     level=getattr(logging, settings.log_level.upper(), logging.INFO),
@@ -93,3 +96,8 @@ app.include_router(leftovers_router, prefix="/api")
 app.include_router(grocery_router, prefix="/api")
 app.include_router(feedback_router, prefix="/api")
 app.include_router(settings_router, prefix="/api")
+
+# Serve frontend — only mounted when the built static files are present (i.e. in Docker)
+_static_dir = Path("/app/static")
+if _static_dir.exists():
+    app.mount("/", StaticFiles(directory=_static_dir, html=True), name="static")
