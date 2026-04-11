@@ -47,8 +47,6 @@ CREATE_WEEKLY_PLAN_TOOL = {
                         "date",
                         "meal_type",
                         "meal_concept",
-                        "estimated_prep_min",
-                        "estimated_cook_min",
                         "is_assembly",
                     ],
                 },

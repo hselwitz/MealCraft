@@ -39,8 +39,8 @@ class MealSlotPlan(BaseModel):
     date: str
     meal_type: Literal["breakfast", "lunch", "dinner", "snack"]
     meal_concept: str
-    estimated_prep_min: int
-    estimated_cook_min: int
+    estimated_prep_min: int = 10
+    estimated_cook_min: int = 0
     batch_component: Optional[str] = None
     is_assembly: bool = False
 
