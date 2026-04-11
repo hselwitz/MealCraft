@@ -189,6 +189,28 @@ export function Settings() {
                 </CardBody>
             </Card>
 
+            {/* Meal Prep Focus */}
+            <Card>
+                <CardBody className="pt-4">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={settings.mealPrepFocus}
+                            onChange={(e) => update("mealPrepFocus", e.target.checked)}
+                            className="mt-0.5 accent-primary-600 w-4 h-4 shrink-0"
+                        />
+                        <div>
+                            <div className="text-sm font-semibold text-gray-800">Meal prep focus</div>
+                            <div className="text-xs text-gray-500 mt-0.5">
+                                Plan around 2–3 batch-cooked base components prepared once. All other meals
+                                assemble in ≤15 min. Meals may repeat — variety comes from sauces and toppings,
+                                not new ingredients.
+                            </div>
+                        </div>
+                    </label>
+                </CardBody>
+            </Card>
+
             {/* Portions & Nutrition */}
             <Card>
                 <CardHeader>
