@@ -273,7 +273,7 @@ async def generate_prep_plan(
 
     recipes_data = []
     for slot in plan.slots:
-        if slot.recipe and slot.status == "planned":
+        if slot.recipe and slot.status == "planned" and "batch-assembly" not in (slot.recipe.tags or []):
             recipe = slot.recipe
             ri_result = await db.execute(
                 select(RecipeIngredient)
@@ -297,6 +297,7 @@ async def generate_prep_plan(
                     "cook_time_min": recipe.cook_time_min,
                     "scheduled_date": str(slot.date),
                     "meal_type": slot.meal_type,
+                    "tags": recipe.tags or [],
                     "ingredients": [
                         {
                             "ingredient_name": ri.ingredient.canonical_name,

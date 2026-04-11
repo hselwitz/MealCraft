@@ -49,19 +49,17 @@ class LLMClient:
         self._client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
     async def generate_recipe(self, concept: str, constraints: dict) -> RecipeOutput:
+        _excluded = {"target_servings", "max_difficulty", "dietary_restrictions", "batch_component", "calorie_target", "prepped_components"}
         prompt = _render(
             "recipe.j2",
             concept=concept,
             target_servings=constraints.get("target_servings", 4),
             max_difficulty=constraints.get("max_difficulty", "medium"),
             dietary_restrictions=constraints.get("dietary_restrictions", []),
-            constraints={
-                k: v
-                for k, v in constraints.items()
-                if k not in ("target_servings", "max_difficulty", "dietary_restrictions")
-            },
+            constraints={k: v for k, v in constraints.items() if k not in _excluded},
             batch_component=constraints.get("batch_component"),
             calorie_target=constraints.get("calorie_target"),
+            prepped_components=constraints.get("prepped_components", []),
         )
         response = await self._client.messages.create(
             model=MODEL,

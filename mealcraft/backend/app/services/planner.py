@@ -87,21 +87,49 @@ class PlannerService:
 
         slot_map = {(str(s.date), s.meal_type): s for s in home_slots}
         fillable = [sp for sp in weekly_plan.meal_slots if slot_map.get((sp.date, sp.meal_type))]
-        total = len(fillable)
 
-        for i, slot_plan in enumerate(fillable, 1):
+        batch_slots = [sp for sp in fillable if not sp.is_assembly]
+        assembly_slots = [sp for sp in fillable if sp.is_assembly]
+        total = len(fillable)
+        i = 0
+
+        # Pass 1: generate batch prep recipes first so we know exactly what gets cooked
+        prepped_components: list[str] = []
+        for slot_plan in batch_slots:
+            i += 1
             db_slot = slot_map[(slot_plan.date, slot_plan.meal_type)]
             yield f"Generating recipe {i}/{total}: {slot_plan.meal_concept}..."
-
             constraints = {
                 "target_servings": float(db_slot.servings),
                 "calorie_target": _meal_calorie_target(plan.calorie_target, slot_plan.meal_type),
-                "max_difficulty": "easy" if slot_plan.is_assembly else preferences.get("max_difficulty", "medium"),
+                "max_difficulty": preferences.get("max_difficulty", "medium"),
                 "dietary_restrictions": preferences.get("dietary_restrictions", []),
             }
-            if slot_plan.batch_component:
-                constraints["batch_component"] = slot_plan.batch_component
+            recipe = await self._generate_and_save_recipe(slot_plan.meal_concept, constraints)
+            db_slot.recipe_id = recipe.id
+            self.db.add(db_slot)
+            prepped_components.append(recipe.title)
 
+        # Merge plan-level batch component names (deduplicated)
+        for bc in weekly_plan.batch_components:
+            if bc not in prepped_components:
+                prepped_components.append(bc)
+
+        # Pass 2: generate assembly recipes with full knowledge of what was prepped
+        fallback_components = ", ".join(prepped_components) if prepped_components else None
+        for slot_plan in assembly_slots:
+            i += 1
+            db_slot = slot_map[(slot_plan.date, slot_plan.meal_type)]
+            yield f"Generating recipe {i}/{total}: {slot_plan.meal_concept}..."
+            constraints = {
+                "target_servings": float(db_slot.servings),
+                "calorie_target": _meal_calorie_target(plan.calorie_target, slot_plan.meal_type),
+                "max_difficulty": "easy",
+                "dietary_restrictions": preferences.get("dietary_restrictions", []),
+                # Always provide batch context — fall back to plan-level components if LLM didn't set it on slot
+                "batch_component": slot_plan.batch_component or fallback_components,
+                "prepped_components": prepped_components,
+            }
             recipe = await self._generate_and_save_recipe(slot_plan.meal_concept, constraints)
             db_slot.recipe_id = recipe.id
             self.db.add(db_slot)

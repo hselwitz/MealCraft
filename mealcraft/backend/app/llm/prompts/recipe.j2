@@ -7,6 +7,15 @@ This meal is assembled from pre-cooked batch components. **Do not generate a rec
 
 **Pre-cooked batch component(s) available:** {{ batch_component }}
 
+{% if prepped_components %}
+**Everything already cooked in this week's batch session:**
+{% for c in prepped_components %}
+- {{ c }} — fully cooked, stored in fridge, needs warming only
+{% endfor %}
+
+These items are **done**. Do not write any step that seasons, marinates, roasts, sautés, boils, or cooks them from scratch. The only heat allowed is a 60–90 second microwave or a quick toss in a dry pan to warm through.
+{% endif %}
+
 ### Requirements
 
 - `prep_time_min`: 5–10 minutes
