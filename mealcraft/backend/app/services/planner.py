@@ -88,8 +88,25 @@ class PlannerService:
         slot_map = {(str(s.date), s.meal_type): s for s in home_slots}
         fillable = [sp for sp in weekly_plan.meal_slots if slot_map.get((sp.date, sp.meal_type))]
 
-        batch_slots = [sp for sp in fillable if not sp.is_assembly]
-        assembly_slots = [sp for sp in fillable if sp.is_assembly]
+        if weekly_plan.batch_components:
+            # Batch prep slots: no batch_component of their own — they ARE the source
+            batch_slots = [sp for sp in fillable if not sp.batch_component]
+            if not batch_slots:
+                # Every slot got a batch_component assigned — pick highest cook time as the prep session
+                batch_slots = [max(fillable, key=lambda s: s.estimated_cook_min)]
+            assembly_slots = [sp for sp in fillable if sp not in batch_slots]
+        else:
+            # No batch plan — generate all as regular recipes
+            batch_slots = fillable
+            assembly_slots = []
+
+        logger.info(
+            f"Batch prep slots ({len(batch_slots)}): {[s.meal_concept for s in batch_slots]}"
+        )
+        logger.info(
+            f"Assembly slots ({len(assembly_slots)}): {[s.meal_concept for s in assembly_slots]}"
+        )
+
         total = len(fillable)
         i = 0
 
