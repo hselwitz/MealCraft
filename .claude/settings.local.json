@@ -9,7 +9,8 @@
       "Bash(mkdir -p /c/Users/Harrison/PycharmProjects/MealCraft/mealcraft/backend/app/services)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(xargs grep:*)"
     ]
   }
 }

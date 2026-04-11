@@ -17,7 +17,6 @@ DEFAULT_SETTINGS = {
     "calorieTarget": 2500,
     "cuisinePreferences": [],
     "dietaryRestrictions": [],
-    "mealPrepFocus": False,
     "pantryStaples": [
         "salt",
         "black pepper",

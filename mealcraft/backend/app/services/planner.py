@@ -96,7 +96,7 @@ class PlannerService:
             constraints = {
                 "target_servings": float(db_slot.servings),
                 "calorie_target": _meal_calorie_target(plan.calorie_target, slot_plan.meal_type),
-                "max_difficulty": preferences.get("max_difficulty", "medium"),
+                "max_difficulty": "easy" if slot_plan.is_assembly else preferences.get("max_difficulty", "medium"),
                 "dietary_restrictions": preferences.get("dietary_restrictions", []),
             }
             if slot_plan.batch_component:

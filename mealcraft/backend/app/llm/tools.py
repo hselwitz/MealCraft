@@ -3,9 +3,9 @@
 CREATE_WEEKLY_PLAN_TOOL = {
     "name": "create_weekly_plan",
     "description": (
-        "Generate a structured weekly meal plan with specific meal concepts for each slot. "
-        "Each slot should have a concrete meal concept that can be turned into a full recipe. "
-        "Optimize for ingredient overlap to minimize shopping and reduce waste."
+        "Generate a batch-cooking weekly meal plan. One slot is the batch prep session (is_assembly=false) "
+        "where all base components are cooked. All other slots that draw from batch components must have "
+        "is_assembly=true, estimated_cook_min of 0–5, and a batch_component referencing what was prepped."
     ),
     "input_schema": {
         "type": "object",
@@ -35,8 +35,12 @@ CREATE_WEEKLY_PLAN_TOOL = {
                         },
                         "batch_component": {
                             "type": "string",
-                            "description": "Shared component from batch cooking (optional)",
+                            "description": "Pre-cooked batch component(s) this meal assembles from (e.g. 'roasted chicken thighs, brown rice'). Required when is_assembly is true.",
                             "nullable": True,
+                        },
+                        "is_assembly": {
+                            "type": "boolean",
+                            "description": "True if this meal only assembles from pre-cooked batch components (no cooking from raw). False for the batch prep session itself.",
                         },
                     },
                     "required": [
@@ -45,6 +49,7 @@ CREATE_WEEKLY_PLAN_TOOL = {
                         "meal_concept",
                         "estimated_prep_min",
                         "estimated_cook_min",
+                        "is_assembly",
                     ],
                 },
             },

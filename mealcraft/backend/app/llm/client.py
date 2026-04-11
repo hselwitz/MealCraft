@@ -136,6 +136,7 @@ class LLMClient:
             available_leftovers=leftovers,
             pantry_staples=pantry,
             slots_to_fill=preferences.get("slots_to_fill", []),
+            meal_prep_focus=preferences.get("meal_prep_focus", True),
         )
         response = await self._client.messages.create(
             model=MODEL,

@@ -13,11 +13,11 @@ const DIFFICULTY_OPTIONS: { value: AppSettings["maxDifficulty"]; label: string; 
 const OVERLAP_OPTIONS: { value: AppSettings["ingredientOverlap"]; label: string; desc: string }[] = [
     {
         value: "low",
-        label: "Variety",
-        desc: "Different ingredients each day — more interesting but a longer shopping list"
+        label: "More variety",
+        desc: "May introduce a second batch component mid-week — slightly longer shopping list"
     },
-    {value: "medium", label: "Balanced", desc: "~30% overlap — some shared staples with daily variety"},
-    {value: "high", label: "Efficient", desc: "Maximize reuse — fewer unique items to buy, shorter shopping list"},
+    {value: "medium", label: "Balanced", desc: "2–3 batch components reused throughout the week"},
+    {value: "high", label: "Minimal", desc: "Strictest reuse — same 2–3 components in every meal, shortest shopping list"},
 ];
 
 function TagInput({
@@ -155,10 +155,10 @@ export function Settings() {
             {/* Shopping List Scope */}
             <Card>
                 <CardHeader>
-                    <h2 className="font-semibold text-gray-900">Shopping List Scope</h2>
+                    <h2 className="font-semibold text-gray-900">Ingredient Variety</h2>
                     <p className="text-sm text-gray-500">
-                        Controls how much the planner reuses the same ingredients across meals.
-                        Higher overlap means a shorter, more focused shopping list.
+                        Controls how many different batch components are planned across the week.
+                        All meals still assemble from pre-cooked components.
                     </p>
                 </CardHeader>
                 <CardBody className="space-y-2 pt-0">
@@ -186,28 +186,6 @@ export function Settings() {
                             </div>
                         </label>
                     ))}
-                </CardBody>
-            </Card>
-
-            {/* Meal Prep Focus */}
-            <Card>
-                <CardBody className="pt-4">
-                    <label className="flex items-start gap-3 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={settings.mealPrepFocus}
-                            onChange={(e) => update("mealPrepFocus", e.target.checked)}
-                            className="mt-0.5 accent-primary-600 w-4 h-4 shrink-0"
-                        />
-                        <div>
-                            <div className="text-sm font-semibold text-gray-800">Meal prep focus</div>
-                            <div className="text-xs text-gray-500 mt-0.5">
-                                Plan around 2–3 batch-cooked base components prepared once. All other meals
-                                assemble in ≤15 min. Meals may repeat — variety comes from sauces and toppings,
-                                not new ingredients.
-                            </div>
-                        </div>
-                    </label>
                 </CardBody>
             </Card>
 
