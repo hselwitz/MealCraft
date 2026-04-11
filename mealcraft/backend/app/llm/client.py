@@ -71,14 +71,37 @@ class LLMClient:
 
     async def generate_assembly_recipe(self, concept: str, constraints: dict, batch_recipes: list[dict]) -> RecipeOutput:
         """Generate an assembly-only serving guide using pre-cooked batch components."""
-        prompt = _render(
-            "assembly.j2",
-            concept=concept,
-            target_servings=constraints.get("target_servings", 2),
-            dietary_restrictions=constraints.get("dietary_restrictions", []),
-            calorie_target=constraints.get("calorie_target"),
-            batch_recipes=batch_recipes,
+        components_block = "\n".join(
+            f"- {r['title']}: {', '.join(r['ingredients'])}"
+            for r in batch_recipes
         )
+        dietary = ", ".join(constraints.get("dietary_restrictions", [])) or "none"
+        calorie_line = f"\n**Calorie target:** ~{constraints.get('calorie_target')} per serving" if constraints.get("calorie_target") else ""
+        prompt = f"""You are MealCraft. Write a serving guide for a meal assembled from pre-cooked batch components. Nothing gets cooked — everything listed below is already fully cooked and in the fridge.
+
+## What's already cooked (do not cook these again)
+
+{components_block}
+
+## Meal to assemble
+
+**{concept}**
+**Servings:** {constraints.get("target_servings", 2)}
+**Dietary restrictions:** {dietary}{calorie_line}
+
+## Rules — non-negotiable
+
+- Every batch component above is ALREADY COOKED. List them as pre-cooked in the ingredients.
+- Steps may only involve: portioning, warming (max 90 sec microwave or 2 min dry pan), combining fresh toppings, and plating.
+- Do NOT write any step that cooks protein, grains, or vegetables from raw.
+- `cook_time_min`: 0–3 (warming only)
+- `prep_time_min`: 5–10
+- `total_time_min`: 5–13
+- `difficulty`: always "easy"
+- Tags: must include "batch-assembly"
+- Fresh additions only: sauces, herbs, raw vegetables, cheese, nuts, condiments
+
+Use the `generate_recipe` tool to return the serving guide."""
         response = await self._client.messages.create(
             model=MODEL,
             max_tokens=2048,
