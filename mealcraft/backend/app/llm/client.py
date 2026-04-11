@@ -49,7 +49,7 @@ class LLMClient:
         self._client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
     async def generate_recipe(self, concept: str, constraints: dict) -> RecipeOutput:
-        _excluded = {"target_servings", "max_difficulty", "dietary_restrictions", "batch_component", "calorie_target", "prepped_components"}
+        _excluded = {"target_servings", "max_difficulty", "dietary_restrictions", "calorie_target"}
         prompt = _render(
             "recipe.j2",
             concept=concept,
@@ -57,9 +57,7 @@ class LLMClient:
             max_difficulty=constraints.get("max_difficulty", "medium"),
             dietary_restrictions=constraints.get("dietary_restrictions", []),
             constraints={k: v for k, v in constraints.items() if k not in _excluded},
-            batch_component=constraints.get("batch_component"),
             calorie_target=constraints.get("calorie_target"),
-            prepped_components=constraints.get("prepped_components", []),
         )
         response = await self._client.messages.create(
             model=MODEL,
@@ -69,6 +67,33 @@ class LLMClient:
             messages=[{"role": "user", "content": prompt}],
         )
         data = _extract_tool_input(response, "generate_recipe")
+        return RecipeOutput.model_validate(data)
+
+    async def generate_assembly_recipe(self, concept: str, constraints: dict, batch_recipes: list[dict]) -> RecipeOutput:
+        """Generate an assembly-only serving guide using pre-cooked batch components."""
+        prompt = _render(
+            "assembly.j2",
+            concept=concept,
+            target_servings=constraints.get("target_servings", 2),
+            dietary_restrictions=constraints.get("dietary_restrictions", []),
+            calorie_target=constraints.get("calorie_target"),
+            batch_recipes=batch_recipes,
+        )
+        response = await self._client.messages.create(
+            model=MODEL,
+            max_tokens=2048,
+            tools=[GENERATE_RECIPE_TOOL],
+            tool_choice={"type": "tool", "name": "generate_recipe"},
+            messages=[{"role": "user", "content": prompt}],
+        )
+        data = _extract_tool_input(response, "generate_recipe")
+        # Enforce hard limits regardless of what the LLM returned
+        data["cook_time_min"] = min(data.get("cook_time_min", 0), 3)
+        data["difficulty"] = "easy"
+        tags = data.get("tags", [])
+        if "batch-assembly" not in tags:
+            tags.append("batch-assembly")
+        data["tags"] = tags
         return RecipeOutput.model_validate(data)
 
     async def generate_recipe_stream(
@@ -82,7 +107,6 @@ class LLMClient:
             max_difficulty=constraints.get("max_difficulty", "medium"),
             dietary_restrictions=constraints.get("dietary_restrictions", []),
             constraints={},
-            batch_component=constraints.get("batch_component"),
             calorie_target=constraints.get("calorie_target"),
         )
 
