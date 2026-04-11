@@ -1,16 +1,24 @@
 """Orchestrates LLM plan generation and persistence."""
 
 import logging
+from datetime import date, datetime
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.llm.client import LLMClient
 from app.models.ingredient import Ingredient, RecipeIngredient
 from app.models.meal_plan import MealPlan, MealSlot
 from app.models.recipe import Recipe, RecipeStep
-from app.services.optimizer import score_weekly_time
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
+
+# Hour (24h) after which a meal type is considered past and won't be regenerated
+_MEAL_CUTOFF_HOUR: dict[str, int] = {
+    "breakfast": 10,
+    "lunch": 14,
+    "dinner": 20,
+}
 
 _MEAL_CALORIE_FRACTION: dict[str, float] = {
     "breakfast": 0.25,
@@ -47,7 +55,21 @@ class PlannerService:
             .all()
         )
 
-        home_slots = [s for s in slots if s.status == "planned" and s.meal_type != "snack"]
+        today = date.today()
+        current_hour = datetime.now().hour
+        home_slots = [
+            s
+            for s in slots
+            if s.status == "planned"
+            and s.meal_type != "snack"
+            and s.date > today
+            or (
+                s.status == "planned"
+                and s.meal_type != "snack"
+                and s.date == today
+                and current_hour < _MEAL_CUTOFF_HOUR.get(s.meal_type, 24)
+            )
+        ]
 
         slots_to_fill = [{"date": str(s.date), "meal_type": s.meal_type} for s in home_slots]
 
