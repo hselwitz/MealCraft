@@ -400,9 +400,25 @@ async def generate_grocery_list(
 
     pantry_staples = body.get("pantry_staples") or None
     ingredient_overlap = body.get("ingredient_overlap", "medium")
+
+    # Derive average servings for batch scaling
+    planned_slots = [s for s in (plan.slots if hasattr(plan, "slots") else [])]
+    batch_servings = 2
+    if plan.batch_components:
+        slots_result = await db.execute(
+            select(MealSlot).where(MealSlot.meal_plan_id == plan_id, MealSlot.status == "planned")
+        )
+        all_slots = slots_result.scalars().all()
+        if all_slots:
+            batch_servings = round(sum(float(s.servings) for s in all_slots) / len(all_slots))
+
     grocery_svc = GroceryService(db, llm)
     grocery_list = await grocery_svc.generate_for_plan(
-        plan_id, pantry_staples=pantry_staples, ingredient_overlap=ingredient_overlap
+        plan_id,
+        pantry_staples=pantry_staples,
+        ingredient_overlap=ingredient_overlap,
+        batch_components=plan.batch_components or None,
+        batch_servings=batch_servings,
     )
 
     return {"grocery_list_id": grocery_list.id, "status": "generated"}

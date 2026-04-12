@@ -37,6 +37,8 @@ class GroceryService:
         plan_id: str,
         pantry_staples: list[str] | None = None,
         ingredient_overlap: str = "medium",
+        batch_components: list[str] | None = None,
+        batch_servings: int = 2,
     ) -> GroceryList:
         """Run the 7-step grocery generation pipeline."""
         if pantry_staples is None:
@@ -135,12 +137,14 @@ class GroceryService:
             item["store_section"] = category_to_section.get(item.get("category", "other"), "other")
 
         # Step 7: LLM post-processing for purchasable quantities
-        if aggregated:
+        if aggregated or batch_components:
             grocery_out = await self.llm.generate_grocery_list(
                 ingredients=list(aggregated.values()),
                 pantry=pantry_staples,
                 leftovers=leftover_inventory,
                 ingredient_overlap=ingredient_overlap,
+                batch_components=batch_components,
+                batch_servings=batch_servings,
             )
         else:
             from app.llm.schemas import GroceryListOutput
