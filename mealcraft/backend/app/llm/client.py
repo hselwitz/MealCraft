@@ -87,13 +87,24 @@ class LLMClient:
             messages=[{"role": "user", "content": prompt}],
         )
         data = _extract_tool_input(response, "generate_recipe")
-        # Enforce hard limits regardless of what the LLM returned
+
+        # Hard enforcement — not left to LLM judgment
         data["cook_time_min"] = min(data.get("cook_time_min", 0), 3)
+        data["prep_time_min"] = min(data.get("prep_time_min", 10), 10)
+        data["total_time_min"] = data["cook_time_min"] + data["prep_time_min"]
         data["difficulty"] = "easy"
         tags = data.get("tags", [])
         if "batch-assembly" not in tags:
             tags.append("batch-assembly")
         data["tags"] = tags
+
+        # Strip any passive steps — passive means unattended cooking (oven, simmer, etc.)
+        # Assembly meals have zero passive cooking by definition.
+        active_steps = [s for s in data.get("steps", []) if s.get("is_active", True)]
+        for i, step in enumerate(active_steps, 1):
+            step["step_number"] = i
+        data["steps"] = active_steps
+
         return RecipeOutput.model_validate(data)
 
     async def generate_recipe_stream(

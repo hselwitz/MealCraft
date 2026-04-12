@@ -88,24 +88,36 @@ class PlannerService:
         slot_map = {(str(s.date), s.meal_type): s for s in home_slots}
         fillable = [sp for sp in weekly_plan.meal_slots if slot_map.get((sp.date, sp.meal_type))]
 
-        if weekly_plan.batch_components:
-            # Batch prep slots: no batch_component of their own — they ARE the source
-            batch_slots = [sp for sp in fillable if not sp.batch_component]
-            if not batch_slots:
-                # Every slot got a batch_component assigned — pick highest cook time as the prep session
-                batch_slots = [max(fillable, key=lambda s: s.estimated_cook_min)]
-            assembly_slots = [sp for sp in fillable if sp not in batch_slots]
+        # Batch mode: triggered if the plan has batch_components OR any slot has batch_component set.
+        # The LLM is inconsistent about setting batch_component on every assembly slot, so we
+        # identify exactly ONE batch prep slot by score and treat everything else as assembly.
+        has_batch_mode = bool(weekly_plan.batch_components) or any(
+            sp.batch_component for sp in fillable
+        )
+
+        if has_batch_mode:
+            def _prep_score(sp) -> int:
+                """Higher = more likely to be the actual batch prep session."""
+                score = sp.estimated_cook_min
+                concept = sp.meal_concept.lower()
+                if any(kw in concept for kw in ("batch prep", "batch cook", "prep session", "prep:")):
+                    score += 10_000
+                if sp.is_assembly:   # explicitly flagged assembly → definitely NOT the prep slot
+                    score -= 10_000
+                if sp.batch_component:  # has a component reference → it's a consumer, not the source
+                    score -= 10_000
+                return score
+
+            prep_slot = max(fillable, key=_prep_score)
+            batch_slots = [prep_slot]
+            assembly_slots = [sp for sp in fillable if sp is not prep_slot]
         else:
-            # No batch plan — generate all as regular recipes
             batch_slots = fillable
             assembly_slots = []
 
-        logger.info(
-            f"Batch prep slots ({len(batch_slots)}): {[s.meal_concept for s in batch_slots]}"
-        )
-        logger.info(
-            f"Assembly slots ({len(assembly_slots)}): {[s.meal_concept for s in assembly_slots]}"
-        )
+        logger.info(f"Plan batch_components: {weekly_plan.batch_components}")
+        logger.info(f"Batch prep ({len(batch_slots)}): {[s.meal_concept for s in batch_slots]}")
+        logger.info(f"Assembly  ({len(assembly_slots)}): {[s.meal_concept for s in assembly_slots]}")
 
         total = len(fillable)
         i = 0
