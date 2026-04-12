@@ -402,7 +402,6 @@ async def generate_grocery_list(
     ingredient_overlap = body.get("ingredient_overlap", "medium")
 
     # Derive average servings for batch scaling
-    planned_slots = [s for s in (plan.slots if hasattr(plan, "slots") else [])]
     batch_servings = 2
     if plan.batch_components:
         slots_result = await db.execute(
