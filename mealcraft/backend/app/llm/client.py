@@ -210,7 +210,6 @@ class LLMClient:
 
     async def generate_grocery_list(
         self, ingredients: list, pantry: list, leftovers: list, ingredient_overlap: str = "medium",
-        batch_components: list[str] | None = None, batch_servings: int = 2,
     ) -> GroceryListOutput:
         # Strip heavy fields before sending to reduce prompt size
         slim_ingredients = [
@@ -223,8 +222,6 @@ class LLMClient:
             pantry_items=pantry,
             leftover_inventory=leftovers,
             ingredient_overlap=ingredient_overlap,
-            batch_components=batch_components or [],
-            batch_servings=batch_servings,
         )
         messages = [{"role": "user", "content": prompt}]
         for attempt in range(2):

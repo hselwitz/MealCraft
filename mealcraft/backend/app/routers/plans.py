@@ -401,23 +401,26 @@ async def generate_grocery_list(
     pantry_staples = body.get("pantry_staples") or None
     ingredient_overlap = body.get("ingredient_overlap", "medium")
 
-    # Derive average servings for batch scaling
-    batch_servings = 2
-    if plan.batch_components:
-        slots_result = await db.execute(
-            select(MealSlot).where(MealSlot.meal_plan_id == plan_id, MealSlot.status == "planned")
-        )
-        all_slots = slots_result.scalars().all()
-        if all_slots:
-            batch_servings = round(sum(float(s.servings) for s in all_slots) / len(all_slots))
+    # Extract structured ingredients from the prep plan (source of truth for batch cooking)
+    prep_plan_ingredients: list[dict] = []
+    prep_result = await db.execute(
+        select(PrepPlanRecord)
+        .where(PrepPlanRecord.meal_plan_id == plan_id)
+        .order_by(desc(PrepPlanRecord.created_at))
+        .limit(1)
+    )
+    prep_record = prep_result.scalar_one_or_none()
+    if prep_record and prep_record.data:
+        for task in prep_record.data.get("tasks", []):
+            for ing in task.get("ingredients", []):
+                prep_plan_ingredients.append(ing)
 
     grocery_svc = GroceryService(db, llm)
     grocery_list = await grocery_svc.generate_for_plan(
         plan_id,
         pantry_staples=pantry_staples,
         ingredient_overlap=ingredient_overlap,
-        batch_components=plan.batch_components or None,
-        batch_servings=batch_servings,
+        prep_plan_ingredients=prep_plan_ingredients or None,
     )
 
     return {"grocery_list_id": grocery_list.id, "status": "generated"}

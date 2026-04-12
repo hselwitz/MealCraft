@@ -51,6 +51,12 @@ class WeeklyPlanOutput(BaseModel):
     notes: str
 
 
+class PrepIngredientOutput(BaseModel):
+    ingredient_name: str
+    quantity: float
+    unit: str
+
+
 class PrepTaskOutput(BaseModel):
     task_name: str
     duration_min: int
@@ -58,6 +64,7 @@ class PrepTaskOutput(BaseModel):
     batch_group: Optional[str] = None
     depends_on: list[str] = []
     tip: Optional[str] = None
+    ingredients: list[PrepIngredientOutput] = []
 
 
 class PrepPlanOutput(BaseModel):

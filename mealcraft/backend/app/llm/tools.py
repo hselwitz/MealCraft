@@ -168,8 +168,21 @@ OPTIMIZE_PREP_PLAN_TOOL = {
                         "batch_group": {"type": "string", "nullable": True},
                         "depends_on": {"type": "array", "items": {"type": "string"}},
                         "tip": {"type": "string", "nullable": True, "description": "A short, practical tip for this step — only include if genuinely non-obvious (e.g. technique, temperature, common mistake). Omit for self-explanatory tasks."},
+                        "ingredients": {
+                            "type": "array",
+                            "description": "Raw ingredients consumed by this task. Include for any task that uses food items. Omit for setup tasks (preheat oven, gather equipment).",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "ingredient_name": {"type": "string"},
+                                    "quantity": {"type": "number"},
+                                    "unit": {"type": "string"},
+                                },
+                                "required": ["ingredient_name", "quantity", "unit"],
+                            },
+                        },
                     },
-                    "required": ["task_name", "duration_min", "is_active", "depends_on"],
+                    "required": ["task_name", "duration_min", "is_active", "depends_on", "ingredients"],
                 },
             },
             "total_active_min": {"type": "integer"},
