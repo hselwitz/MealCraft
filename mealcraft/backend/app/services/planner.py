@@ -87,65 +87,17 @@ class PlannerService:
 
         slot_map = {(str(s.date), s.meal_type): s for s in home_slots}
         fillable = [sp for sp in weekly_plan.meal_slots if slot_map.get((sp.date, sp.meal_type))]
+        batch_components = weekly_plan.batch_components
 
-        # Batch mode: triggered if the plan has batch_components OR any slot has batch_component set.
-        # The LLM is inconsistent about setting batch_component on every assembly slot, so we
-        # identify exactly ONE batch prep slot by score and treat everything else as assembly.
-        has_batch_mode = bool(weekly_plan.batch_components) or any(
-            sp.batch_component for sp in fillable
-        )
+        logger.info(f"Batch components: {batch_components}")
+        logger.info(f"Generating {len(fillable)} assembly recipes")
 
-        if has_batch_mode:
-            def _prep_score(sp) -> int:
-                """Higher = more likely to be the actual batch prep session."""
-                score = sp.estimated_cook_min
-                concept = sp.meal_concept.lower()
-                if any(kw in concept for kw in ("batch prep", "batch cook", "prep session", "prep:")):
-                    score += 10_000
-                if sp.is_assembly:   # explicitly flagged assembly → definitely NOT the prep slot
-                    score -= 10_000
-                if sp.batch_component:  # has a component reference → it's a consumer, not the source
-                    score -= 10_000
-                return score
-
-            prep_slot = max(fillable, key=_prep_score)
-            batch_slots = [prep_slot]
-            assembly_slots = [sp for sp in fillable if sp is not prep_slot]
-        else:
-            batch_slots = fillable
-            assembly_slots = []
-
-        logger.info(f"Plan batch_components: {weekly_plan.batch_components}")
-        logger.info(f"Batch prep ({len(batch_slots)}): {[s.meal_concept for s in batch_slots]}")
-        logger.info(f"Assembly  ({len(assembly_slots)}): {[s.meal_concept for s in assembly_slots]}")
+        # Persist batch components on the plan so prep plan generation can use them later
+        plan.batch_components = batch_components
+        self.db.add(plan)
 
         total = len(fillable)
-        i = 0
-
-        # Pass 1: generate batch prep recipes first so we know exactly what gets cooked
-        batch_recipes_data: list[dict] = []
-        for slot_plan in batch_slots:
-            i += 1
-            db_slot = slot_map[(slot_plan.date, slot_plan.meal_type)]
-            yield f"Generating recipe {i}/{total}: {slot_plan.meal_concept}..."
-            constraints = {
-                "target_servings": float(db_slot.servings),
-                "calorie_target": _meal_calorie_target(plan.calorie_target, slot_plan.meal_type),
-                "max_difficulty": preferences.get("max_difficulty", "medium"),
-                "dietary_restrictions": preferences.get("dietary_restrictions", []),
-            }
-            recipe_out = await self.llm.generate_recipe(slot_plan.meal_concept, constraints)
-            recipe = await self._save_recipe_output(recipe_out, slot_plan.meal_concept)
-            db_slot.recipe_id = recipe.id
-            self.db.add(db_slot)
-            batch_recipes_data.append({
-                "title": recipe_out.title,
-                "ingredients": [ing.ingredient_name for ing in recipe_out.ingredients],
-            })
-
-        # Pass 2: generate assembly guides with the exact batch recipe ingredient lists
-        for slot_plan in assembly_slots:
-            i += 1
+        for i, slot_plan in enumerate(fillable, 1):
             db_slot = slot_map[(slot_plan.date, slot_plan.meal_type)]
             yield f"Generating recipe {i}/{total}: {slot_plan.meal_concept}..."
             constraints = {
@@ -154,7 +106,7 @@ class PlannerService:
                 "dietary_restrictions": preferences.get("dietary_restrictions", []),
             }
             recipe_out = await self.llm.generate_assembly_recipe(
-                slot_plan.meal_concept, constraints, batch_recipes_data
+                slot_plan.meal_concept, constraints, batch_components
             )
             recipe = await self._save_recipe_output(recipe_out, slot_plan.meal_concept)
             db_slot.recipe_id = recipe.id

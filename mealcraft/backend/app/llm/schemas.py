@@ -42,7 +42,6 @@ class MealSlotPlan(BaseModel):
     estimated_prep_min: int = 10
     estimated_cook_min: int = 0
     batch_component: Optional[str] = None
-    is_assembly: bool = False
 
 
 class WeeklyPlanOutput(BaseModel):

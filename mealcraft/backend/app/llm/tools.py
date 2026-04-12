@@ -3,9 +3,9 @@
 CREATE_WEEKLY_PLAN_TOOL = {
     "name": "create_weekly_plan",
     "description": (
-        "Generate a batch-cooking weekly meal plan. One slot is the batch prep session (is_assembly=false) "
-        "where all base components are cooked. All other slots that draw from batch components must have "
-        "is_assembly=true, estimated_cook_min of 0–5, and a batch_component referencing what was prepped."
+        "Generate a batch-cooking weekly meal plan. All meal slots are assembly meals — no cooking required "
+        "at mealtime. Batch components are cooked once during a prep session (tracked separately). "
+        "Each slot should reference which batch components it uses via batch_component."
     ),
     "input_schema": {
         "type": "object",
@@ -38,16 +38,11 @@ CREATE_WEEKLY_PLAN_TOOL = {
                             "description": "Pre-cooked batch component(s) this meal assembles from (e.g. 'roasted chicken thighs, brown rice'). Required when is_assembly is true.",
                             "nullable": True,
                         },
-                        "is_assembly": {
-                            "type": "boolean",
-                            "description": "True if this meal only assembles from pre-cooked batch components (no cooking from raw). False for the batch prep session itself.",
-                        },
                     },
                     "required": [
                         "date",
                         "meal_type",
                         "meal_concept",
-                        "is_assembly",
                     ],
                 },
             },

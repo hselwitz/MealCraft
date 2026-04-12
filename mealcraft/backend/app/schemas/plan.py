@@ -105,7 +105,7 @@ class FeedbackOut(BaseModel):
 
 
 class PrepPlanRequest(BaseModel):
-    pass
+    dietary_restrictions: List[str] = []
 
 
 class PrepPlanPatch(BaseModel):

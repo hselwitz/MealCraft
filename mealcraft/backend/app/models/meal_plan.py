@@ -38,6 +38,7 @@ class MealPlan(Base):
     )
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False, default=_now)
     generation_prompt_hash: Mapped[str | None] = mapped_column(VARCHAR(64), nullable=True)
+    batch_components: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
     slots: Mapped[list["MealSlot"]] = relationship(
         "MealSlot", back_populates="plan", cascade="all, delete-orphan"

@@ -69,7 +69,7 @@ class LLMClient:
         data = _extract_tool_input(response, "generate_recipe")
         return RecipeOutput.model_validate(data)
 
-    async def generate_assembly_recipe(self, concept: str, constraints: dict, batch_recipes: list[dict]) -> RecipeOutput:
+    async def generate_assembly_recipe(self, concept: str, constraints: dict, batch_components: list[str]) -> RecipeOutput:
         """Generate an assembly-only serving guide using pre-cooked batch components."""
         prompt = _render(
             "assembly.j2",
@@ -77,7 +77,7 @@ class LLMClient:
             target_servings=constraints.get("target_servings", 2),
             dietary_restrictions=constraints.get("dietary_restrictions", []),
             calorie_target=constraints.get("calorie_target"),
-            batch_recipes=batch_recipes,
+            batch_components=batch_components,
         )
         response = await self._client.messages.create(
             model=MODEL,
@@ -90,20 +90,11 @@ class LLMClient:
 
         # Hard enforcement — not left to LLM judgment
         data["cook_time_min"] = min(data.get("cook_time_min", 0), 3)
-        data["prep_time_min"] = min(data.get("prep_time_min", 10), 10)
-        data["total_time_min"] = data["cook_time_min"] + data["prep_time_min"]
         data["difficulty"] = "easy"
         tags = data.get("tags", [])
         if "batch-assembly" not in tags:
             tags.append("batch-assembly")
         data["tags"] = tags
-
-        # Strip any passive steps — passive means unattended cooking (oven, simmer, etc.)
-        # Assembly meals have zero passive cooking by definition.
-        active_steps = [s for s in data.get("steps", []) if s.get("is_active", True)]
-        for i, step in enumerate(active_steps, 1):
-            step["step_number"] = i
-        data["steps"] = active_steps
 
         return RecipeOutput.model_validate(data)
 
@@ -181,22 +172,25 @@ class LLMClient:
         data = _extract_tool_input(response, "create_weekly_plan")
         return WeeklyPlanOutput.model_validate(data)
 
-    async def optimize_prep_plan(self, recipes: list) -> PrepPlanOutput:
-        from datetime import date as _date
+    async def optimize_prep_plan(
+        self,
+        batch_components: list[str],
+        servings: int,
+        first_meal_date: str,
+        last_meal_date: str,
+        dietary_restrictions: list[str] | None = None,
+    ) -> PrepPlanOutput:
+        from datetime import date as _date, datetime as _datetime
         today = _date.today()
-        scheduled_dates = sorted(
-            {r["scheduled_date"] for r in recipes if r.get("scheduled_date")},
-        )
-        first_meal_date = scheduled_dates[0] if scheduled_dates else str(today)
-        last_meal_date = scheduled_dates[-1] if scheduled_dates else str(today)
 
         def _weekday(d: str) -> str:
-            from datetime import datetime
-            return datetime.strptime(d, "%Y-%m-%d").strftime("%A")
+            return _datetime.strptime(d, "%Y-%m-%d").strftime("%A")
 
         prompt = _render(
             "prep_plan.j2",
-            recipes=recipes,
+            batch_components=batch_components,
+            servings=servings,
+            dietary_restrictions=dietary_restrictions or [],
             today=str(today),
             today_weekday=today.strftime("%A"),
             first_meal_date=first_meal_date,

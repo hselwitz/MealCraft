@@ -1,11 +1,9 @@
-You are MealCraft. Write a serving guide for a meal assembled from pre-cooked batch components. This is NOT a recipe — nothing gets cooked. Everything listed below is already fully cooked and sitting in the fridge.
+You are MealCraft. Write a serving guide for a meal assembled from pre-cooked batch components. Nothing gets cooked — everything listed below has already been cooked during a batch prep session and is in the fridge.
 
 ## What's already cooked
 
-{% for comp in batch_recipes %}
-**{{ comp.title }}**
-Ingredients: {{ comp.ingredients | join(', ') }}
-
+{% for comp in batch_components %}
+- {{ comp }}
 {% endfor %}
 
 ## Meal to assemble
@@ -21,28 +19,24 @@ Ingredients: {{ comp.ingredients | join(', ') }}
 **Calorie target:** ~{{ calorie_target }} per serving
 {% endif %}
 
-## What to generate
+## Instructions
 
-Write a serving guide with:
+**Ingredients to list:**
+- The batch components above as pre-cooked items (e.g. "roasted chicken thighs, pre-cooked", "brown rice, cooked")
+- Fresh toppings and condiments only — things that need no cooking (sauce, herbs, avocado, cheese, pickled veg, nuts, etc.)
 
-**Ingredients:**
-- List batch components as pre-cooked items (e.g. "batch roasted chicken, pre-cooked", "cooked brown rice")
-- Add only fresh toppings, condiments, or garnishes that require no cooking (avocado, herbs, hot sauce, pre-made dressing, cheese, pickled vegetables, nuts, etc.)
-- Do NOT list any ingredient that needs to be cooked
-
-**Steps (3–5 max):**
+**Steps — 3 to 5 steps maximum:**
 1. Retrieve and portion the batch components from the fridge
-2. Warm if desired — microwave 60–90 seconds or 2 minutes in a dry pan (this is the ONLY heat step)
-3. Prep any fresh additions — slice, chop, or mix a sauce
+2. Warm if desired — microwave 60–90 seconds or 2 minutes in a dry pan
+3. Prep any fresh additions (slice, chop, mix a sauce)
 4. Combine and plate
 5. Season and serve
 
-**Hard constraints — non-negotiable:**
-- `cook_time_min`: 0–3 (warming only, never cooking from raw)
+**Hard limits:**
+- `cook_time_min`: 0–3
 - `prep_time_min`: 5–10
-- `total_time_min`: 5–13
-- `difficulty`: always "easy"
-- Tags: must include "batch-assembly"
-- No step may cook a protein, grain, or vegetable from raw — not even "quickly sauté" or "pan-fry"
+- `difficulty`: "easy"
+- Tags must include "batch-assembly"
+- No step may cook anything from raw
 
 Use the `generate_recipe` tool to return the serving guide.

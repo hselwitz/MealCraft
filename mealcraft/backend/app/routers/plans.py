@@ -2,15 +2,15 @@
 
 import json
 import logging
+from datetime import date
 from typing import Optional
 
 from app.db import get_db
 from app.llm.client import get_llm_client, LLMClient
 from app.models.grocery import GroceryList, GroceryItem
-from app.models.ingredient import RecipeIngredient
 from app.models.meal_plan import MealPlan, MealSlot
 from app.models.prep_plan import PrepPlanRecord
-from app.models.recipe import Recipe, RecipeStep
+from app.models.recipe import Recipe
 from app.schemas.plan import (
     MealPlanCreate,
     MealPlanUpdate,
@@ -271,58 +271,26 @@ async def generate_prep_plan(
 ):
     plan = await _load_plan_with_slots(plan_id, db)
 
-    recipes_data = []
-    for slot in plan.slots:
-        if slot.recipe and slot.status == "planned" and "batch-assembly" not in (slot.recipe.tags or []):
-            recipe = slot.recipe
-            ri_result = await db.execute(
-                select(RecipeIngredient)
-                .where(RecipeIngredient.recipe_id == recipe.id)
-                .options(selectinload(RecipeIngredient.ingredient))
-            )
-            recipe_ingredients = ri_result.scalars().all()
+    if not plan.batch_components:
+        raise HTTPException(status_code=400, detail="No batch components found — generate a plan first")
 
-            steps_result = await db.execute(
-                select(RecipeStep)
-                .where(RecipeStep.recipe_id == recipe.id)
-                .order_by(RecipeStep.step_number)
-            )
-            steps = steps_result.scalars().all()
+    # Servings: average across planned slots, defaulting to plan calorie_target household size
+    planned_slots = [s for s in plan.slots if s.status == "planned"]
+    servings = round(
+        sum(float(s.servings) for s in planned_slots) / len(planned_slots)
+    ) if planned_slots else 2
 
-            recipes_data.append(
-                {
-                    "title": recipe.title,
-                    "servings": float(recipe.servings),
-                    "prep_time_min": recipe.prep_time_min,
-                    "cook_time_min": recipe.cook_time_min,
-                    "scheduled_date": str(slot.date),
-                    "meal_type": slot.meal_type,
-                    "tags": recipe.tags or [],
-                    "ingredients": [
-                        {
-                            "ingredient_name": ri.ingredient.canonical_name,
-                            "quantity": float(ri.quantity),
-                            "unit": ri.unit,
-                            "prep_note": ri.prep_note,
-                        }
-                        for ri in recipe_ingredients
-                    ],
-                    "steps": [
-                        {
-                            "step_number": s.step_number,
-                            "instruction": s.instruction,
-                            "duration_min": s.duration_min,
-                            "is_active": s.is_active,
-                        }
-                        for s in steps
-                    ],
-                }
-            )
+    scheduled_dates = sorted({str(s.date) for s in planned_slots})
+    first_meal_date = scheduled_dates[0] if scheduled_dates else str(date.today())
+    last_meal_date = scheduled_dates[-1] if scheduled_dates else first_meal_date
 
-    if not recipes_data:
-        raise HTTPException(status_code=400, detail="No recipes found for this plan")
-
-    prep_plan = await llm.optimize_prep_plan(recipes_data)
+    prep_plan = await llm.optimize_prep_plan(
+        batch_components=plan.batch_components,
+        servings=servings,
+        first_meal_date=first_meal_date,
+        last_meal_date=last_meal_date,
+        dietary_restrictions=body.dietary_restrictions,
+    )
 
     # Persist — replace any existing prep plan for this plan
     existing = await db.execute(
