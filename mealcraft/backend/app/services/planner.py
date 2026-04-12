@@ -104,6 +104,7 @@ class PlannerService:
                 "target_servings": float(db_slot.servings),
                 "calorie_target": _meal_calorie_target(plan.calorie_target, slot_plan.meal_type),
                 "dietary_restrictions": preferences.get("dietary_restrictions", []),
+                "prefer_store_bought": preferences.get("prefer_store_bought", True),
             }
             recipe_out = await self.llm.generate_assembly_recipe(
                 slot_plan.meal_concept, constraints, batch_components

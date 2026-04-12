@@ -110,6 +110,7 @@ export function WeeklyPlanner() {
                             household_size: settings.defaultServings,
                             dietary_restrictions: settings.dietaryRestrictions,
                             cuisine_preferences: settings.cuisinePreferences,
+                            prefer_store_bought: settings.preferStoreBought,
                         },
                     },
                     (raw) => {

@@ -9,6 +9,7 @@ export interface AppSettings {
     cuisinePreferences: string[];
     dietaryRestrictions: string[];
     pantryStaples: string[];
+    preferStoreBought: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -22,6 +23,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
         "salt", "black pepper", "olive oil", "vegetable oil",
         "sugar", "all-purpose flour", "baking soda", "baking powder",
     ],
+    preferStoreBought: true,
 };
 
 export function useSettings() {

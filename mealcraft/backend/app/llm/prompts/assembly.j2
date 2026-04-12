@@ -24,6 +24,9 @@ You are MealCraft. Write a serving guide for a meal assembled from pre-cooked ba
 **Ingredients to list:**
 - The batch components above as pre-cooked items (e.g. "roasted chicken thighs, pre-cooked", "brown rice, cooked")
 - Fresh toppings and condiments only — things that need no cooking (sauce, herbs, avocado, cheese, pickled veg, nuts, etc.)
+{% if prefer_store_bought %}
+- **Use store-bought versions** of sauces and condiments (tzatziki, hummus, pesto, harissa, tahini, etc.) — list them as single ingredients, do not list their sub-ingredients
+{% endif %}
 
 **Steps — 3 to 5 steps maximum:**
 1. Retrieve and portion the batch components from the fridge

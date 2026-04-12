@@ -78,6 +78,7 @@ class LLMClient:
             dietary_restrictions=constraints.get("dietary_restrictions", []),
             calorie_target=constraints.get("calorie_target"),
             batch_components=batch_components,
+            prefer_store_bought=constraints.get("prefer_store_bought", True),
         )
         response = await self._client.messages.create(
             model=MODEL,
@@ -161,6 +162,7 @@ class LLMClient:
             pantry_staples=pantry,
             slots_to_fill=preferences.get("slots_to_fill", []),
             meal_prep_focus=preferences.get("meal_prep_focus", True),
+            prefer_store_bought=preferences.get("prefer_store_bought", True),
         )
         response = await self._client.messages.create(
             model=MODEL,

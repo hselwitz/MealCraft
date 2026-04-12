@@ -252,6 +252,40 @@ export function Settings() {
                 </CardBody>
             </Card>
 
+            {/* Store-bought preference */}
+            <Card>
+                <CardHeader>
+                    <h2 className="font-semibold text-gray-900">Condiments & Sauces</h2>
+                    <p className="text-sm text-gray-500">
+                        When enabled, recipes use store-bought condiments (tzatziki, hummus, pesto, harissa, etc.)
+                        rather than making them from scratch.
+                    </p>
+                </CardHeader>
+                <CardBody className="pt-0">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                        <div className="relative">
+                            <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={settings.preferStoreBought}
+                                onChange={(e) => update("preferStoreBought", e.target.checked)}
+                            />
+                            <div className={[
+                                "w-10 h-6 rounded-full transition-colors",
+                                settings.preferStoreBought ? "bg-primary-500" : "bg-gray-300",
+                            ].join(" ")}/>
+                            <div className={[
+                                "absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform",
+                                settings.preferStoreBought ? "translate-x-5" : "translate-x-1",
+                            ].join(" ")}/>
+                        </div>
+                        <span className="text-sm font-medium text-gray-800">
+                            Prefer store-bought condiments
+                        </span>
+                    </label>
+                </CardBody>
+            </Card>
+
             {/* Cuisine & Dietary */}
             <Card>
                 <CardHeader>
