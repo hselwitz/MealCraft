@@ -17,7 +17,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 logging.basicConfig(
@@ -100,4 +100,8 @@ app.include_router(settings_router, prefix="/api")
 # Serve frontend — only mounted when the built static files are present (i.e. in Docker)
 _static_dir = Path("/app/static")
 if _static_dir.exists():
-    app.mount("/", StaticFiles(directory=_static_dir, html=True), name="static")
+    app.mount("/assets", StaticFiles(directory=_static_dir / "assets"), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def spa_fallback(full_path: str):
+        return FileResponse(_static_dir / "index.html")
