@@ -1,5 +1,6 @@
 """Recipes router."""
 
+import json
 import logging
 from typing import Optional
 
@@ -10,7 +11,8 @@ from app.models.recipe import Recipe, RecipeStep
 from app.schemas.recipe import RecipeOut, RecipeListItem, RecipeGenerateRequest, RecipeIngredientOut
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, delete
+from app.models.repertoire import RepertoireMeal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -41,6 +43,8 @@ def _recipe_to_out(recipe: Recipe) -> dict:
         "prep_time_min": recipe.prep_time_min,
         "cook_time_min": recipe.cook_time_min,
         "total_time_min": recipe.total_time_min,
+        "active_time_min": sum(s.duration_min for s in recipe.steps if s.is_active)
+            if all(s.duration_min is not None for s in recipe.steps if s.is_active) and recipe.steps else None,
         "difficulty": recipe.difficulty,
         "servings": float(recipe.servings),
         "calories_per_serving": recipe.calories_per_serving,
@@ -108,6 +112,7 @@ async def delete_recipe(recipe_id: str, db: AsyncSession = Depends(get_db)):
     recipe = recipe.scalar_one_or_none()
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
+    await db.execute(delete(RepertoireMeal).where(RepertoireMeal.recipe_id == recipe_id))
     await db.delete(recipe)
 
 
@@ -129,9 +134,14 @@ async def generate_recipe(
     if "text/event-stream" in accept:
 
         async def _stream():
-            async for chunk in llm.generate_recipe_stream(body.concept, constraints):
-                yield chunk
-            yield "data: [DONE]\n\n"
+            try:
+                async for chunk in llm.generate_recipe_stream(body.concept, constraints):
+                    yield chunk
+            except Exception as error:
+                logger.exception("Recipe stream failed")
+                yield f"data: {json.dumps({'error': str(error)})}\n\n"
+            finally:
+                yield "data: [DONE]\n\n"
 
         return StreamingResponse(
             _stream(),

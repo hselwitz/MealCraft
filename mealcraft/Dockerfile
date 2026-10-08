@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir \
         "alembic>=1.13" \
         "pydantic>=2.0" \
         "pydantic-settings>=2.0" \
-        "anthropic>=0.40" \
+        "httpx>=0.27" \
         "jinja2>=3.1" \
         "rapidfuzz>=3.0" \
         "python-multipart>=0.0.9"

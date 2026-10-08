@@ -1,4 +1,11 @@
-import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {useMutation, useQuery, useQueryClient, type QueryClient} from "@tanstack/react-query";
+import {workflowApi} from "@/api/workflow";
+import type {PlanningWindow} from "@/hooks/usePlanningWindow";
+const invalidateWorkflow = (qc: QueryClient) => {
+    qc.invalidateQueries({queryKey: ["workflow"]});
+    qc.invalidateQueries({queryKey: ["prep-plan"]});
+    qc.invalidateQueries({queryKey: ["grocery"]});
+};
 import {plansApi} from "@/api/plans";
 import {recipesApi} from "@/api/recipes";
 import {leftoversApi} from "@/api/leftovers";
@@ -43,6 +50,7 @@ export function useUpdateSlot() {
             body: UpdateSlotRequest;
         }) => plansApi.updateSlot(planId, slotId, body),
         onSuccess: (_data, vars) => {
+            invalidateWorkflow(qc);
             qc.invalidateQueries({queryKey: ["plans", vars.planId]});
         },
     });
@@ -54,6 +62,7 @@ export function useRegenerateSlot() {
         mutationFn: ({planId, slotId}: { planId: string; slotId: string }) =>
             plansApi.regenerateSlot(planId, slotId),
         onSuccess: (_data, vars) => {
+            invalidateWorkflow(qc);
             qc.invalidateQueries({queryKey: ["plans", vars.planId]});
         },
     });
@@ -64,7 +73,7 @@ export function useCreateSlot() {
     return useMutation({
         mutationFn: ({planId, date, mealType}: { planId: string; date: string; mealType: string }) =>
             plansApi.createSlot(planId, date, mealType),
-        onSuccess: (_data, vars) => qc.invalidateQueries({queryKey: ["plans", vars.planId]}),
+        onSuccess: (_data, vars) => {invalidateWorkflow(qc); qc.invalidateQueries({queryKey: ["plans", vars.planId]});},
     });
 }
 
@@ -73,7 +82,7 @@ export function useDeleteSlot() {
     return useMutation({
         mutationFn: ({planId, slotId}: { planId: string; slotId: string }) =>
             plansApi.deleteSlot(planId, slotId),
-        onSuccess: (_data, vars) => qc.invalidateQueries({queryKey: ["plans", vars.planId]}),
+        onSuccess: (_data, vars) => {invalidateWorkflow(qc); qc.invalidateQueries({queryKey: ["plans", vars.planId]});},
     });
 }
 
@@ -83,16 +92,17 @@ export function useGeneratePlan() {
         mutationFn: ({planId, preferences}: { planId: string; preferences?: object }) =>
             plansApi.generate(planId, preferences),
         onSuccess: (_data, vars) => {
+            invalidateWorkflow(qc);
             qc.invalidateQueries({queryKey: ["plans", vars.planId]});
             qc.invalidateQueries({queryKey: ["plans"]});
         },
     });
 }
 
-export function useCurrentPrepPlan(planId: string | undefined) {
+export function useCurrentPrepPlan(planId: string | undefined, window?: PlanningWindow) {
     return useQuery({
-        queryKey: ["prep-plan", planId],
-        queryFn: () => plansApi.getCurrentPrepPlan(planId!),
+        queryKey: ["prep-plan", planId, window],
+        queryFn: () => window ? workflowApi.currentPrep(planId!, window) : plansApi.getCurrentPrepPlan(planId!),
         enabled: !!planId,
         retry: false, // 404 means no plan yet — don't retry
     });
@@ -103,23 +113,23 @@ export function usePatchPrepPlan() {
     return useMutation({
         mutationFn: ({planId, completedTasks}: { planId: string; completedTasks: string[] }) =>
             plansApi.patchPrepPlan(planId, {completed_tasks: completedTasks}),
-        onSuccess: (_data, vars) => qc.invalidateQueries({queryKey: ["prep-plan", vars.planId]}),
+        onSuccess: (_data, vars) => {invalidateWorkflow(qc); qc.invalidateQueries({queryKey: ["prep-plan", vars.planId]});},
     });
 }
 
 export function useGeneratePrepPlan() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: ({planId}: { planId: string }) =>
-            plansApi.generatePrepPlan(planId),
-        onSuccess: (_data, vars) => qc.invalidateQueries({queryKey: ["prep-plan", vars.planId]}),
+        mutationFn: ({planId, window}: { planId: string; window: PlanningWindow }) =>
+            workflowApi.prep(planId, window),
+        onSuccess: (_data, vars) => {invalidateWorkflow(qc); qc.invalidateQueries({queryKey: ["prep-plan", vars.planId]});},
     });
 }
 
-export function useCurrentGroceryList(planId: string | undefined) {
+export function useCurrentGroceryList(planId: string | undefined, window?: PlanningWindow) {
     return useQuery({
-        queryKey: ["grocery", "current", planId],
-        queryFn: () => plansApi.getCurrentGroceryList(planId!),
+        queryKey: ["grocery", "current", planId, window],
+        queryFn: () => window ? workflowApi.currentShop(planId!, window) : plansApi.getCurrentGroceryList(planId!),
         enabled: !!planId,
         retry: false,
     });
@@ -128,13 +138,14 @@ export function useCurrentGroceryList(planId: string | undefined) {
 export function useGenerateGroceryList() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: ({planId, pantryStaples, ingredientOverlap}: {
+        mutationFn: ({planId, window}: {
+            window: PlanningWindow;
             planId: string;
             pantryStaples?: string[];
             ingredientOverlap?: string
         }) =>
-            plansApi.generateGroceryList(planId, pantryStaples, ingredientOverlap),
-        onSuccess: (_data, vars) => qc.invalidateQueries({queryKey: ["grocery", "current", vars.planId]}),
+            workflowApi.shop(planId, window),
+        onSuccess: (_data, vars) => {qc.invalidateQueries({queryKey: ["workflow"]}); qc.invalidateQueries({queryKey: ["grocery", "current", vars.planId]});},
     });
 }
 
@@ -232,6 +243,7 @@ export function useToggleGroceryItem() {
             planId: string;
         }) => groceryApi.updateItem(listId, itemId, {checked}),
         onSuccess: (_data, vars) => {
+            invalidateWorkflow(qc);
             qc.invalidateQueries({queryKey: ["grocery", "current", vars.planId]});
         },
     });

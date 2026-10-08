@@ -12,7 +12,7 @@ export function RecipesList() {
     const {data: plans} = usePlans();
     const generateRecipe = useGenerateRecipe();
     const deleteRecipe = useDeleteRecipe();
-    const [showAll, setShowAll] = useState(false);
+    const [showAll, setShowAll] = useState(true);
     const [showGenerateForm, setShowGenerateForm] = useState(false);
     const [concept, setConcept] = useState("");
     const [restrictions, setRestrictions] = useState("");

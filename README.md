@@ -1,29 +1,56 @@
 # 🍽 MealCraft
 
-**AI-powered home cooking management.** MealCraft uses Claude to plan your week of meals, generate recipes, build a
-smart grocery list, and help you turn leftovers into tomorrow's lunch — all optimized to minimize how much time you
-spend in the kitchen.
+**Plan once. Shop together. Prep efficiently.** MealCraft helps you choose multiple meals,
+combine their shopping requirements, and coordinate the cooking into a practical prep session.
+Discover convenient variations on familiar dishes, save your favorites, and keep your repertoire fresh.
+Generation runs through OpenRouter with your choice of tool-capable model.
 
----
+## A look inside
+
+The refreshed UI uses warm cream and sage colors, small kitchen illustrations, and a clear
+**Plan → Shop → Prep** workflow. Screenshots below show sample meals and illustrative prep estimates.
+
+### Plan your next prep
+
+![Plan home with three selected meals, serving totals, shared ingredients, and shopping and prep readiness](docs/screenshots/plan.png)
+
 <table>
   <tr>
-    <td><img src="mealcraft/planner.jpg" width="200" alt="Planner"></td>
-    <td><img src="mealcraft/grocery_list.jpg" width="200" alt="Grocery List"></td>
-    <td><img src="mealcraft/prep.jpg" width="200" alt="Prep Plan"></td>
-    <td><img src="mealcraft/recipe.jpg" width="200" alt="Recipe"></td>
+    <th>Shop for the whole selection</th>
+    <th>Coordinate your prep</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/shop.png" width="520" alt="Combined shopping list grouped by store section with checked items"></td>
+    <td><img src="docs/screenshots/prep.png" width="520" alt="Coordinated prep session showing shared components, mealtime finishes, and a task checklist"></td>
   </tr>
 </table>
 
+<details>
+  <summary>See Discover and the mobile layout</summary>
+
+### Find a convenient variation
+
+![Dinner discovery with familiar-meal options and a hands-on time budget](docs/screenshots/discover.png)
+
+### Plan on your phone
+
+<img src="docs/screenshots/plan-mobile.png" width="320" alt="Mobile Plan screen with selected meals and bottom navigation">
+
+</details>
+
 ## What it does
 
-| Feature               | Description                                                                                                                                                               |
-|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Weekly Planner**    | Generate a 7-day meal plan with breakfast, lunch, and dinner. Mark slots as eating out or skipped — the planner adjusts everything accordingly.                           |
-| **Recipe Generation** | Every recipe is generated on the fly by Claude. Full ingredients, step-by-step instructions, estimated nutrition, and difficulty rating.                                  |
-| **Grocery List**      | One-click consolidated shopping list organized by store section. Quantities are rounded to purchasable amounts. Check items off as you shop.                              |
-| **Batch Prep Plan**   | Identifies shared components across the week (e.g. one pot of grains, one roasted protein) and groups them into 1–2 prep sessions.                                        |
-| **Leftover Tracker**  | Log what you cooked and how much is left. Get AI suggestions for reusing leftovers in upcoming meals before they expire.                                                  |
-| **Settings**          | Control recipe difficulty, ingredient overlap (short focused list vs. varied shopping), default servings, calorie targets, cuisine preferences, and dietary restrictions. |
+| Feature | Description |
+|---------|-------------|
+| **Plan** | Choose a shared date range and schedule recipes with the servings you want to prep. See selected meals, ingredient overlap, and shopping and prep readiness on the home screen. |
+| **Shop** | Combine ingredient requirements for the selected meals and portions into a list organized by store section. Check items off as you shop. |
+| **Prep** | Coordinate selected recipes into shared cooking tasks, with dependencies, hands-on and elapsed time estimates, portioning guidance, and the remaining work at mealtime. |
+| **Discover** | Find three convenient ideas based on familiar meals, ingredients, scheduled meals, and a hands-on time budget. Generate a complete recipe when you choose one. |
+| **Repertoire** | Save recipes, add meals you already cook, keep notes, and record whether you would make a dish again and whether it was easy enough. |
+| **Calendar** | View and edit meal slots, mark meals as eating out or skipped, and generate ideas for unfilled slots without replacing chosen recipes. |
+| **Recipe library** | Browse complete recipes with ingredients, steps, estimated nutrition, and scheduling controls. |
+| **Leftovers** | Track remaining portions and get suggestions for using them. |
+| **Settings** | Configure OpenRouter, default servings, difficulty, ingredient overlap, dietary restrictions, and cuisine preferences. |
 
 ---
 
@@ -33,7 +60,7 @@ spend in the kitchen.
 Frontend   React 18 + TypeScript + Vite + Tailwind CSS
 Backend    Python 3.12 + FastAPI + SQLAlchemy 2.0 (async)
 Database   SQLite (file-based, zero config)
-AI         Anthropic Claude (claude-sonnet-4-20250514) via tool_use
+AI         OpenRouter (configurable model) via function calling
 ```
 
 ---
@@ -48,11 +75,11 @@ AI         Anthropic Claude (claude-sonnet-4-20250514) via tool_use
 ### With Docker
 
 ```bash
-git clone <repo>
+# From the repository root
 cd mealcraft
 
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
+# Optionally add OPENROUTER_API_KEY to .env, or enter it in Settings after startup
 
 docker compose up --build
 ```
@@ -64,43 +91,64 @@ Open **http://localhost:3080** — that's it.
 **Backend**
 
 ```bash
-cd backend
-python -m venv venv && venv\Scripts\activate   # Windows
+# From the repository root
+cd mealcraft/backend
+python -m venv .venv
+source .venv/bin/activate  # macOS/Linux
+# Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -e .
-# Set env vars (or create a .env file in backend/)
-set ANTHROPIC_API_KEY=sk-ant-...
-mkdir data
+alembic upgrade head
 uvicorn app.main:app --reload --port 8000
 ```
 
 **Frontend**
 
 ```bash
-cd frontend
+# In a second terminal, from the repository root
+cd mealcraft/frontend
 npm install
 npm run dev        # → http://localhost:5173
 ```
+
+Enter your OpenRouter key in **More → Settings** after startup, or set `OPENROUTER_API_KEY`
+in the backend environment before launching the server.
 
 The Vite dev server proxies `/api` to `localhost:8000` automatically.
 
 ---
 
-## How a typical week works
+## Plan, shop, and prep together
 
-```
-1. Planner → "Create Week"        Creates empty meal slots for the week
-2. Planner → "Generate Plan"      Claude fills every slot with a recipe
-                                   (~22 API calls, ~2 minutes)
-3. Grocery → "Generate List"      Consolidated list by store section
-4. Prep    → "Generate Prep Plan" Batched prep sessions to minimize daily cooking
-5. Cook, check off grocery items, log leftovers as you go
-```
+1. Open **Plan** and choose the dates you want to cover.
+2. Add existing recipes or use **Discover** to find convenient variations. From a recipe, select its meal date and servings to prep.
+3. Preview **Prep** for those dates: shared components, coordinated tasks, total hands-on and elapsed effort, portioning, and what remains at mealtime.
+4. Open **Shop** to build a combined list scaled to the selected servings. Batch-assembly meals require a current prep session to translate components into raw groceries.
+5. Shop and follow the prep checklist. Keep meal feedback and successful shortcuts in **Repertoire**.
+
+Plan, Shop, and Prep share one date range. Changing recipes, dates, or portions marks existing outputs out of date.
+Regenerated shopping lists retain checks only where the previous checked quantity still covers the new requirement.
+The full calendar is linked from Plan; Settings, leftovers, and the recipe library are under More.
+
+For existing local installations, run `alembic upgrade head` from `mealcraft/backend` before starting the server.
+Docker runs migrations automatically. Migration 006 adds grocery coverage metadata and preserves existing plans and lists.
+
+## Verification
+
+From `mealcraft/backend`: `python -m unittest discover -s tests -v`.
+From `mealcraft/frontend`: `npm run build`.
+Tests use isolated databases and mocked model responses; live OpenRouter generation requires a configured key.
 
 ---
 
 ## Settings
 
-All settings are applied the next time you generate a plan.
+Enter your OpenRouter API key and a model ID under **Settings → OpenRouter**, then click **Save**.
+The model must support tool calling. New generation requests use saved changes immediately.
+Keys are stored in the server SQLite database (including its backups), never returned by the settings API,
+and can be replaced or removed in Settings. An environment key is used when no saved key exists.
+The app starts without a key so you can configure it through Settings.
+
+Saved settings apply to subsequent generation requests. Scheduled servings control how much you shop for and prep.
 
 | Setting                  | Options                        | Effect                                                                                                                                                                |
 |--------------------------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -122,19 +170,26 @@ All settings are applied the next time you generate a plan.
 └─────────────────┘     └────────┬────────┘     └─────────────────┘
                                  │
                          ┌───────▼───────┐
-                         │  Anthropic    │
-                         │  Claude API   │
+                         │  OpenRouter   │
+                         │  Chat API     │
                          └───────────────┘
 ```
 
-**LLM integration** uses Claude's `tool_use` feature to enforce structured JSON output — no fragile regex parsing. Each
-planning task is a separate API call with its own Pydantic schema:
+**LLM integration** sends function schemas to OpenRouter and validates returned tool arguments with
+Pydantic before using them. The model proposes recipes and prep instructions; the application handles
+scheduling, portion scaling, shopping aggregation, saved feedback, and coverage checks locally.
 
+Generation tasks include:
+
+- `suggest_dinners` → three convenient ideas informed by repertoire and selected meals
 - `generate_weekly_plan` → high-level meal concepts for the week
 - `generate_recipe` → full recipe per meal slot (ingredients, steps, nutrition)
-- `optimize_prep_plan` → batched prep tasks with timing
+- `coordinate_meals` → a coordinated session for selected recipes, shared components, and mealtime finishes
+- `optimize_prep_plan` → batch-component prep for the calendar planner
 - `generate_grocery_list` → deduplicated, section-organized shopping list
 - `suggest_leftover_use` → creative reuse suggestions
+
+Cut-off completions automatically retry once with a larger output allowance. Partial recipe output is never saved.
 
 **Real-time progress** during plan generation streams via SSE so you see each recipe being created as it happens.
 
@@ -151,8 +206,8 @@ mealcraft/
 │       ├── routers/       # FastAPI route handlers
 │       ├── services/      # Business logic (planner, optimizer, grocery)
 │       └── llm/
-│           ├── client.py  # Anthropic API wrapper
-│           ├── tools.py   # tool_use schema definitions
+│           ├── client.py  # OpenRouter API wrapper
+│           ├── tools.py   # Function schema definitions
 │           ├── schemas.py # Pydantic models for LLM output
 │           └── prompts/   # Jinja2 prompt templates
 ├── frontend/
@@ -168,10 +223,12 @@ mealcraft/
 
 ## Backup
 
-All data lives in a single file: `backend/data/mealcraft.db`
+For local development, app data lives in `mealcraft/backend/data/mealcraft.db`.
+Stop the backend before copying it. Backups include any saved OpenRouter key.
+Docker stores the database in the `mealcraft_data` volume.
 
 ```bash
-cp backend/data/mealcraft.db backend/data/mealcraft.db.bak
+cp mealcraft/backend/data/mealcraft.db mealcraft/backend/data/mealcraft.db.bak
 ```
 
 ---
@@ -180,7 +237,8 @@ cp backend/data/mealcraft.db backend/data/mealcraft.db.bak
 
 | Variable            | Default                                   | Description                       |
 |---------------------|-------------------------------------------|-----------------------------------|
-| `ANTHROPIC_API_KEY` | required                                  | Your Anthropic API key            |
+| `OPENROUTER_API_KEY` | optional | Server key fallback; alternatively enter a key in Settings |
+| `OPENROUTER_MODEL` | `anthropic/claude-sonnet-4` | Default model; can be changed in Settings |
 | `DATABASE_URL`      | `sqlite+aiosqlite:///./data/mealcraft.db` | SQLAlchemy connection string      |
 | `CALORIE_TARGET`    | `2500`                                    | Default daily calorie target      |
 | `MAX_DIFFICULTY`    | `medium`                                  | Default recipe difficulty ceiling |

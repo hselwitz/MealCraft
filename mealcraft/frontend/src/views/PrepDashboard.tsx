@@ -1,3 +1,7 @@
+import {KitchenArt} from "@/components/KitchenArt";
+import {Link} from "react-router-dom";
+import {usePlanningWindow} from "@/hooks/usePlanningWindow";
+import {WorkflowBar} from "@/components/WorkflowBar";
 import {Calendar, Clock, Coffee, Zap} from "lucide-react";
 import {useCurrentPrepPlan, useGeneratePrepPlan, usePatchPrepPlan, usePlans} from "@/hooks/useApi";
 import type {PrepTask} from "@/types";
@@ -6,18 +10,19 @@ import {Badge} from "@/components/ui/badge";
 import {Card, CardBody, CardHeader} from "@/components/ui/card";
 
 export function PrepDashboard() {
+    const {window, valid} = usePlanningWindow();
     const {data: plans} = usePlans();
     const generatePrep = useGeneratePrepPlan();
     const patchPrep = usePatchPrepPlan();
 
     const activePlan = plans?.find((p) => p.status === "active" || p.status === "draft");
 
-    const {data: prepPlan} = useCurrentPrepPlan(activePlan?.id);
+    const {data: prepPlan} = useCurrentPrepPlan(valid ? activePlan?.id : undefined, window);
     const completedTasks = new Set(prepPlan?.completed_tasks ?? []);
 
     const handleGenerate = async () => {
         if (!activePlan) return;
-        await generatePrep.mutateAsync({planId: activePlan.id});
+        generatePrep.mutate({planId: activePlan.id, window});
     };
 
     const toggleTask = async (taskName: string) => {
@@ -45,23 +50,24 @@ export function PrepDashboard() {
     const pct = totalTime > 0 ? (doneTime / totalTime) * 100 : 0;
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Prep Dashboard</h1>
+        <div className="max-w-5xl mx-auto space-y-6">
+            <WorkflowBar/>
+            <div className="flex flex-wrap gap-4 items-center justify-between">
+                <div className="flex items-center gap-3"><KitchenArt variant="prep" className="hidden sm:block w-20 shrink-0"/><div>
+                    <h1 className="text-3xl kitchen-title text-gray-900">Prep your selected meals</h1>
                     {activePlan && (
                         <p className="text-sm text-gray-500 mt-1">
                             {activePlan.name}
                         </p>
                     )}
-                </div>
+                </div></div>
 
                 <Button
                     onClick={handleGenerate}
                     loading={generatePrep.isPending}
-                    disabled={!activePlan}
+                    disabled={!activePlan || !valid}
                 >
-                    Generate Prep Plan
+                    Coordinate Prep Session
                 </Button>
             </div>
 
@@ -72,7 +78,11 @@ export function PrepDashboard() {
                 </div>
             )}
 
-            {prepPlan && (
+            {generatePrep.error && <p role="alert" className="text-sm text-red-600">{generatePrep.error.message}</p>}
+            {patchPrep.error && <p role="alert" className="text-sm text-red-600">{patchPrep.error.message}</p>}
+            {prepPlan?.stale && <p className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl text-sm">Your meals, servings, or dates changed. Coordinate a fresh session for the current selection.</p>}
+            {activePlan && !prepPlan && !generatePrep.isPending && <p className="text-sm text-gray-500">Pick multiple recipes in <Link to="/" className="underline">Plan</Link>, then coordinate their cooking, shared ingredients, and portioning here.</p>}
+            {prepPlan && !prepPlan.stale && (
                 <>
                     {/* Summary cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -109,6 +119,10 @@ export function PrepDashboard() {
                         </Card>
                     </div>
 
+                    {prepPlan.session_elapsed_min && <p className="text-sm text-gray-600">Estimated session: {prepPlan.session_elapsed_min} minutes elapsed. Passive tasks can overlap.</p>}
+                    {!!prepPlan.shared_components?.length && <p className="rounded-xl bg-primary-50 p-4 text-sm text-primary-900">Prep together: {prepPlan.shared_components.join(" · ")}</p>}
+                    <Link to="/grocery" className="inline-block text-sm font-semibold text-primary-700">Shop for these meals →</Link>
+                    {!!prepPlan.meal_finishes?.length && <section className="space-y-3"><h2 className="text-lg font-semibold">What remains at mealtime</h2>{prepPlan.meal_finishes.map(meal=><div key={meal.recipe_id} className="bg-white border rounded-xl p-4"><Link to={`/recipes/${meal.recipe_id}`} className="font-semibold">{meal.title}</Link><p className="text-xs text-primary-700 mt-1">About {meal.active_min} minutes hands-on</p><p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap">{meal.instructions}</p></div>)}</section>}
                     {/* Recommended sessions */}
                     {prepPlan.recommended_sessions.length > 0 && (
                         <div>

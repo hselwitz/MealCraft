@@ -1,11 +1,13 @@
 import {useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
-import {CheckCircle2, ChevronLeft, Circle, Clock, Flame, ThumbsDown, ThumbsUp, Users} from "lucide-react";
+import {CheckCircle2, ChevronLeft, Circle, Clock, Flame, Users} from "lucide-react";
 import {useRecipe} from "@/hooks/useApi";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
 import {Card, CardBody} from "@/components/ui/card";
-import {apiPost} from "@/api/client";
+import {useRepertoire} from "@/hooks/useRepertoire";
+import {ScheduleRecipe} from "@/components/ScheduleRecipe";
+import {CookingFeedback} from "@/components/CookingFeedback";
 
 const difficultyVariant = {
     easy: "green" as const,
@@ -19,7 +21,8 @@ export function RecipeDetail() {
     const {data: recipe, isLoading, error} = useRecipe(id);
     const [scaleFactor, setScaleFactor] = useState(1);
     const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
-    const [feedbackSent, setFeedbackSent] = useState<"thumbs_up" | "thumbs_down" | null>(null);
+    const {data: repertoire} = useRepertoire();
+    const memory = repertoire?.find((meal) => meal.recipe_id === id);
 
     if (isLoading) {
         return (
@@ -47,15 +50,6 @@ export function RecipeDetail() {
         setCompletedSteps(next);
     };
 
-    const handleFeedback = async (rating: "thumbs_up" | "thumbs_down") => {
-        try {
-            await apiPost("/feedback", {recipe_id: recipe.id, rating});
-            setFeedbackSent(rating);
-        } catch {
-            // ignore
-        }
-    };
-
     const scaledQty = (qty: number) => {
         const scaled = qty * scaleFactor;
         return scaled % 1 === 0 ? scaled.toString() : scaled.toFixed(2);
@@ -76,30 +70,6 @@ export function RecipeDetail() {
             <div>
                 <div className="flex items-start justify-between gap-4">
                     <h1 className="text-3xl font-bold text-gray-900">{recipe.title}</h1>
-                    <div className="flex gap-1 shrink-0">
-                        {feedbackSent ? (
-                            <Badge variant={feedbackSent === "thumbs_up" ? "green" : "red"}>
-                                {feedbackSent === "thumbs_up" ? "👍 Rated" : "👎 Rated"}
-                            </Badge>
-                        ) : (
-                            <>
-                                <button
-                                    className="p-2 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-600 transition-colors"
-                                    onClick={() => handleFeedback("thumbs_up")}
-                                    title="Thumbs up"
-                                >
-                                    <ThumbsUp size={20}/>
-                                </button>
-                                <button
-                                    className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-                                    onClick={() => handleFeedback("thumbs_down")}
-                                    title="Thumbs down"
-                                >
-                                    <ThumbsDown size={20}/>
-                                </button>
-                            </>
-                        )}
-                    </div>
                 </div>
                 <p className="text-gray-600 mt-2">{recipe.description}</p>
 
@@ -139,6 +109,15 @@ export function RecipeDetail() {
                     ))}
                 </div>
             </div>
+
+            <Card>
+                <CardBody>
+                    {recipe.active_time_min != null && <p className="text-sm text-primary-700 font-semibold mb-4">About {recipe.active_time_min} minutes hands-on · {recipe.total_time_min} minutes total</p>}
+                    <CookingFeedback key={recipe.id} meal={memory} recipeId={recipe.id}/>
+                </CardBody>
+            </Card>
+
+            <Card><CardBody><ScheduleRecipe key={recipe.id} recipeId={recipe.id}/></CardBody></Card>
 
             {/* Nutrition */}
             {(recipe.protein_g || recipe.carbs_g || recipe.fat_g) && (

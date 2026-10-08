@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from app.db import Base
-from sqlalchemy import VARCHAR, TIMESTAMP, Enum as SAEnum, ForeignKey, Numeric, Boolean
+from sqlalchemy import VARCHAR, TIMESTAMP, Enum as SAEnum, ForeignKey, Numeric, Boolean, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
@@ -21,6 +21,7 @@ class GroceryList(Base):
     meal_plan_id: Mapped[str] = mapped_column(
         VARCHAR(36), ForeignKey("meal_plans.id"), nullable=False
     )
+    scope: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     generated_at: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False, default=_now)
     status: Mapped[str] = mapped_column(
         SAEnum("draft", "finalized", "ordered", name="grocery_status"),

@@ -3,6 +3,8 @@
 import logging
 from contextlib import asynccontextmanager
 
+from app.routers.discovery import router as discovery_router
+from app.routers.workflow import router as workflow_router
 from app.config import settings
 from app.db import init_db
 from app.routers import (
@@ -96,6 +98,8 @@ app.include_router(leftovers_router, prefix="/api")
 app.include_router(grocery_router, prefix="/api")
 app.include_router(feedback_router, prefix="/api")
 app.include_router(settings_router, prefix="/api")
+app.include_router(discovery_router, prefix="/api")
+app.include_router(workflow_router, prefix="/api")
 
 # Serve frontend — only mounted when the built static files are present (i.e. in Docker)
 _static_dir = Path("/app/static")

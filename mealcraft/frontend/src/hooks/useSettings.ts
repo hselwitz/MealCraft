@@ -2,6 +2,9 @@ import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {settingsApi} from "@/api/settings";
 
 export interface AppSettings {
+    openRouterModel: string;
+    hasOpenRouterKey: boolean;
+    openRouterKeySource: "settings" | "environment" | null;
     maxDifficulty: "easy" | "medium" | "hard";
     ingredientOverlap: "low" | "medium" | "high";
     defaultServings: number;
@@ -13,6 +16,9 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
+    openRouterModel: "anthropic/claude-sonnet-4",
+    hasOpenRouterKey: false,
+    openRouterKeySource: null,
     maxDifficulty: "medium",
     ingredientOverlap: "medium",
     defaultServings: 2,
@@ -48,5 +54,5 @@ export function useSettings() {
         mutation.mutate(next);
     };
 
-    return [settings, setSettings] as const;
+    return [settings, setSettings, mutation] as const;
 }

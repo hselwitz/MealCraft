@@ -1,4 +1,4 @@
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {CheckCircle2, Settings2, X} from "lucide-react";
 import {type AppSettings, DEFAULT_SETTINGS, useSettings} from "@/hooks/useSettings";
 import {Button} from "@/components/ui/button";
@@ -77,7 +77,11 @@ function TagInput({
 }
 
 export function Settings() {
-    const [settings, setSettings] = useSettings();
+    const [settings, setSettings, saveSettings] = useSettings();
+    const [apiKey, setApiKey] = useState("");
+    const [model, setModel] = useState(settings.openRouterModel);
+    const [saveError, setSaveError] = useState<string | null>(null);
+    useEffect(() => setModel(settings.openRouterModel), [settings.openRouterModel]);
     const [saved, setSaved] = useState(false);
 
     const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
@@ -85,11 +89,31 @@ export function Settings() {
         setSaved(false);
     };
 
-    const handleSave = () => {
-        // Settings are already persisted live via useLocalStorage,
-        // but give the user explicit confirmation.
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
+    const handleSave = async () => {
+        setSaved(false);
+        setSaveError(null);
+        try {
+            await saveSettings.mutateAsync({
+                openRouterModel: model.trim(),
+                ...(apiKey.trim() ? {openRouterApiKey: apiKey.trim()} : {}),
+            });
+            setApiKey("");
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2500);
+        } catch (error) {
+            setSaveError(error instanceof Error ? error.message : "Could not save settings.");
+        }
+    };
+
+    const handleRemoveKey = async () => {
+        setSaveError(null);
+        setSaved(false);
+        try {
+            await saveSettings.mutateAsync({openRouterApiKey: null});
+            setApiKey("");
+        } catch (error) {
+            setSaveError(error instanceof Error ? error.message : "Could not remove key.");
+        }
     };
 
     const handleReset = () => {
@@ -112,11 +136,47 @@ export function Settings() {
                     <Button variant="ghost" size="sm" onClick={handleReset}>
                         Reset to defaults
                     </Button>
-                    <Button size="sm" onClick={handleSave} className="flex items-center gap-1.5">
+                    <Button size="sm" loading={saveSettings.isPending} disabled={!model.trim()} onClick={handleSave} className="flex items-center gap-1.5">
                         {saved ? <><CheckCircle2 size={14}/> Saved</> : "Save"}
                     </Button>
                 </div>
             </div>
+
+            {saveError && <p role="alert" className="text-sm text-red-600">{saveError}</p>}
+            <Card>
+                <CardHeader>
+                    <h2 className="font-semibold text-gray-900">OpenRouter</h2>
+                    <p className="text-sm text-gray-500">Powers recipes, meal ideas, shopping lists, and prep.</p>
+                </CardHeader>
+                <CardBody className="space-y-4 pt-0">
+                    <div>
+                        <label htmlFor="openrouter-key" className="block text-sm font-medium text-gray-700 mb-2">API key</label>
+                        <input id="openrouter-key" type="password" autoComplete="off" spellCheck={false}
+                            value={apiKey} onChange={(e) => {setApiKey(e.target.value); setSaved(false);}}
+                            placeholder={settings.hasOpenRouterKey ? "Key configured — enter a replacement" : "Paste your OpenRouter API key"}
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"/>
+                        <p className="text-xs text-gray-500 mt-2">
+                            {settings.hasOpenRouterKey
+                                ? settings.openRouterKeySource === "environment" ? "Using a key from the server environment." : "A key is saved on the server."
+                                : "No key configured."} Leave blank to keep the current key.
+                            {" "}Keys entered here are stored in MealCraft’s server database.
+                        </p>
+                        <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noreferrer"
+                            className="text-xs text-primary-600 hover:underline">Get an OpenRouter key</a>
+                    </div>
+                    <div>
+                        <label htmlFor="openrouter-model" className="block text-sm font-medium text-gray-700 mb-2">Model</label>
+                        <input id="openrouter-model" value={model}
+                            onChange={(e) => {setModel(e.target.value); setSaved(false);}}
+                            placeholder="anthropic/claude-sonnet-4"
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"/>
+                        <p className="text-xs text-gray-500 mt-2">Use an OpenRouter model ID that supports tool calling. Click Save to apply the model and key.</p>
+                    </div>
+                    {settings.openRouterKeySource === "settings" && (
+                        <Button variant="ghost" size="sm" disabled={saveSettings.isPending} onClick={handleRemoveKey}>Remove saved key</Button>
+                    )}
+                </CardBody>
+            </Card>
 
             {/* Recipe Complexity */}
             <Card>

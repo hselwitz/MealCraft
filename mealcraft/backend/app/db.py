@@ -35,3 +35,13 @@ async def init_db():
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    from app.models.repertoire import RepertoireMeal, FAMILIAR_MEALS
+    from sqlalchemy import select
+    async with AsyncSessionLocal() as session:
+        # Fresh installs receive the three familiar meals; existing entries are preserved.
+        for meal in FAMILIAR_MEALS:
+            exists = await session.scalar(select(RepertoireMeal.id).where(RepertoireMeal.id == meal["id"]))
+            if not exists:
+                session.add(RepertoireMeal(**meal, familiar=True, saved=True))
+        await session.commit()

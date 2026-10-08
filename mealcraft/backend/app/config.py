@@ -2,7 +2,8 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    anthropic_api_key: str
+    openrouter_api_key: str = ""
+    openrouter_model: str = "anthropic/claude-sonnet-4"
     database_url: str = "sqlite+aiosqlite:///./data/mealcraft.db"
     calorie_target: int = 2500
     max_difficulty: str = "medium"
@@ -10,6 +11,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 
 settings = Settings()

@@ -51,6 +51,7 @@ class RecipeListItem(BaseModel):
     description: str
     prep_time_min: int
     cook_time_min: int
+    total_time_min: int
     difficulty: str
     servings: float
     calories_per_serving: Optional[int] = None

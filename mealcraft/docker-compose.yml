@@ -6,7 +6,8 @@ services:
     ports:
       - "3080:8000"
     environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-anthropic/claude-sonnet-4}
       - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///./data/mealcraft.db}
       - CALORIE_TARGET=${CALORIE_TARGET:-2500}
       - MAX_DIFFICULTY=${MAX_DIFFICULTY:-medium}

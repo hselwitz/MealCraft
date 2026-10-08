@@ -1,3 +1,7 @@
+import {KitchenArt} from "@/components/KitchenArt";
+import {Link} from "react-router-dom";
+import {usePlanningWindow} from "@/hooks/usePlanningWindow";
+import {WorkflowBar} from "@/components/WorkflowBar";
 import {useState} from "react";
 import {CheckCircle2, ShoppingCart} from "lucide-react";
 import {GroceryListSkeleton} from "@/components/ui/skeleton";
@@ -22,6 +26,7 @@ const SECTION_LABELS: Record<StoreSection, string> = {
 const SECTION_ORDER: StoreSection[] = ["produce", "meat", "dairy", "bakery", "pantry", "frozen", "other"];
 
 export function GroceryList() {
+    const {window, valid} = usePlanningWindow();
     const {data: plans} = usePlans();
     const [settings] = useSettings();
     const generateList = useGenerateGroceryList();
@@ -29,11 +34,12 @@ export function GroceryList() {
 
     const activePlan = plans?.find((p) => p.status === "active" || p.status === "draft");
 
-    const {data: groceryList, isLoading} = useCurrentGroceryList(activePlan?.id);
+    const {data: groceryList, isLoading} = useCurrentGroceryList(valid ? activePlan?.id : undefined, window);
 
     const handleGenerate = async () => {
         if (!activePlan) return;
-        await generateList.mutateAsync({
+        generateList.mutate({
+            window,
             planId: activePlan.id,
             pantryStaples: settings.pantryStaples,
             ingredientOverlap: settings.ingredientOverlap,
@@ -68,19 +74,20 @@ export function GroceryList() {
     const uncheckedCount = totalCount - checkedCount;
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Grocery List</h1>
-                    {groceryList && (
+        <div className="max-w-5xl mx-auto space-y-6">
+            <WorkflowBar/>
+            <div className="flex flex-wrap gap-4 items-center justify-between">
+                <div className="flex items-center gap-3"><KitchenArt variant="shop" className="hidden sm:block w-20 shrink-0"/><div>
+                    <h1 className="text-3xl kitchen-title text-gray-900">Shop for your selected meals</h1>
+            {groceryList && !groceryList.stale && (
                         <p className="text-sm text-gray-500 mt-1">
                             {checkedCount}/{totalCount} items checked
                         </p>
                     )}
-                </div>
+                </div></div>
 
                 <div className="flex items-center gap-2">
-                    {uncheckedCount > 0 && (
+                    {uncheckedCount > 0 && !groceryList?.stale && (
                         <button
                             onClick={() => setShowAmazon(true)}
                             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors"
@@ -95,7 +102,7 @@ export function GroceryList() {
                     <Button
                         onClick={handleGenerate}
                         loading={generateList.isPending}
-                        disabled={!activePlan}
+                        disabled={!activePlan || !valid}
                         variant="outline"
                         className="flex items-center gap-2"
                     >
@@ -114,7 +121,12 @@ export function GroceryList() {
 
             {isLoading && <GroceryListSkeleton/>}
 
-            {groceryList && (
+            {generateList.error && <p role="alert" className="text-sm text-red-600">{generateList.error.message}</p>}
+            {toggleItem.error && <p role="alert" className="text-sm text-red-600">{toggleItem.error.message}</p>}
+            {groceryList?.stale && <p className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm">Your selected meals or prep requirements changed. Regenerate the shopping list. Checked quantities are carried over where they still cover the requirement.</p>}
+            {activePlan && !groceryList && <p className="text-sm text-gray-500">This list combines the portions selected in <Link to="/" className="underline">Plan</Link>. For assembly meals, coordinate <Link to="/prep" className="underline">Prep</Link> first to get their raw ingredients.</p>}
+            <Link to="/prep" className="inline-block text-sm font-semibold text-primary-700">Continue to prep →</Link>
+            {groceryList && !groceryList.stale && (
                 <>
                     {/* Progress */}
                     {totalCount > 0 && (
@@ -204,7 +216,7 @@ export function GroceryList() {
                 </>
             )}
 
-            {showAmazon && groceryList && (
+            {showAmazon && groceryList && !groceryList.stale && (
                 <AmazonFreshModal
                     items={groceryList.items}
                     onClose={() => setShowAmazon(false)}

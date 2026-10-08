@@ -91,6 +91,7 @@ export interface RecipeIngredient {
 }
 
 export interface Recipe {
+    active_time_min?: number | null;
     id: string;
     title: string;
     description: string;
@@ -156,6 +157,7 @@ export interface GroceryItem {
 }
 
 export interface GroceryList {
+    stale?: boolean;
     id: string;
     meal_plan_id: string;
     generated_at: string;
@@ -197,6 +199,10 @@ export interface PrepTask {
 }
 
 export interface PrepPlan {
+    stale?: boolean;
+    session_elapsed_min?: number;
+    shared_components?: string[];
+    meal_finishes?: {recipe_id: string; title: string; instructions: string; active_min: number}[];
     tasks: PrepTask[];
     total_active_min: number;
     total_passive_min: number;

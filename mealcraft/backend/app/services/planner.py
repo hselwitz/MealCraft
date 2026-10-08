@@ -58,18 +58,13 @@ class PlannerService:
         today = date.today()
         current_hour = datetime.now().hour
         home_slots = [
-            s
-            for s in slots
-            if s.status == "planned"
-            and s.meal_type != "snack"
-            and s.date > today
-            or (
-                s.status == "planned"
-                and s.meal_type != "snack"
-                and s.date == today
-                and current_hour < _MEAL_CUTOFF_HOUR.get(s.meal_type, 24)
-            )
+            s for s in slots
+            if s.status == "planned" and not s.recipe_id and s.meal_type != "snack"
+            and (s.date > today or (s.date == today and current_hour < _MEAL_CUTOFF_HOUR.get(s.meal_type, 24)))
         ]
+        if not home_slots:
+            yield "__DONE__"
+            return
 
         slots_to_fill = [{"date": str(s.date), "meal_type": s.meal_type} for s in home_slots]
 
@@ -81,7 +76,7 @@ class PlannerService:
             "slots_to_fill": slots_to_fill,
         }
 
-        yield "Planning your week with Claude..."
+        yield "Planning your meals..."
         weekly_plan = await self.llm.generate_weekly_plan(prefs, schedule, leftovers, pantry)
         logger.info(f"Generated weekly plan with {len(weekly_plan.meal_slots)} slots")
 

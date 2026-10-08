@@ -19,4 +19,7 @@ __all__ = [
     "GroceryItem",
     "PrepPlanRecord",
     "AppSettings",
+    "RepertoireMeal",
 ]
+
+from app.models.repertoire import RepertoireMeal

@@ -38,6 +38,8 @@ class GroceryService:
         pantry_staples: list[str] | None = None,
         ingredient_overlap: str = "medium",
         prep_plan_ingredients: list[dict] | None = None,
+        selected_slots: list | None = None,
+        scope: dict | None = None,
     ) -> GroceryList:
         """Run the 7-step grocery generation pipeline."""
         if pantry_staples is None:
@@ -49,7 +51,7 @@ class GroceryService:
             .where(MealSlot.meal_plan_id == plan_id, MealSlot.status == "planned")
             .options(selectinload(MealSlot.recipe))
         )
-        slots = slots_result.scalars().all()
+        slots = selected_slots if selected_slots is not None else slots_result.scalars().all()
 
         raw_ingredients: list[dict] = []
         for slot in slots:
@@ -112,19 +114,23 @@ class GroceryService:
                 )
 
         # Step 4: Subtract pantry staples
+        if selected_slots is not None:
+            # A leftover dish only replaces groceries when explicitly scheduled as such.
+            leftover_inventory = []
         pantry_set = {s.lower().strip() for s in pantry_staples}
 
         # Step 5: Aggregate by canonical ingredient
-        aggregated: dict[str, dict] = {}
+        aggregated: dict[tuple[str, str], dict] = {}
         for item in raw_ingredients:
             name = item["ingredient_name"].lower()
+            key = (name, item["unit"])
             if name in pantry_set:
                 continue
-            if name in aggregated:
-                if aggregated[name]["unit"] == item["unit"]:
-                    aggregated[name]["quantity"] += item["quantity"]
+            if key in aggregated:
+                if aggregated[key]["unit"] == item["unit"]:
+                    aggregated[key]["quantity"] += item["quantity"]
             else:
-                aggregated[name] = {
+                aggregated[key] = {
                     "ingredient_name": name,
                     "quantity": item["quantity"],
                     "unit": item["unit"],
@@ -160,7 +166,15 @@ class GroceryService:
             grocery_out = GroceryListOutput(items=[])
 
         # Persist to DB
-        grocery_list = GroceryList(meal_plan_id=plan_id)
+        previous = await self.db.scalar(select(GroceryList).where(GroceryList.meal_plan_id == plan_id)
+                                        .order_by(GroceryList.generated_at.desc()).limit(1))
+        checked = {}
+        if scope and previous and previous.scope and all(previous.scope.get(k) == scope.get(k) for k in ("start_date", "end_date")):
+            previous_items = await self.db.execute(select(GroceryItem).where(GroceryItem.grocery_list_id == previous.id)
+                                                  .options(selectinload(GroceryItem.ingredient)))
+            checked = {(i.ingredient.canonical_name, i.unit): float(i.quantity)
+                       for i in previous_items.scalars() if i.checked}
+        grocery_list = GroceryList(meal_plan_id=plan_id, scope=scope)
         self.db.add(grocery_list)
         await self.db.flush()
 
@@ -181,7 +195,7 @@ class GroceryService:
                 quantity=item.quantity,
                 unit=item.unit,
                 store_section=item.store_section,
-                checked=False,
+                checked=checked.get((ingredient.canonical_name, item.unit), -1) >= item.quantity,
             )
             self.db.add(grocery_item)
 

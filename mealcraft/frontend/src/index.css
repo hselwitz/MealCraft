@@ -9,6 +9,7 @@
 
     body {
         @apply bg-gray-50 text-gray-900;
+        background-color: #f8f7f2;
     }
 
     * {
@@ -16,7 +17,50 @@
     }
 }
 
+@layer components {
+    .app-shell {
+        background: radial-gradient(ellipse at 85% 0%, #edf0e3 0%, transparent 42%), #f8f7f2;
+    }
+    .kitchen-hero {
+        @apply relative flex items-center justify-between gap-4 rounded-2xl border p-6 sm:p-8;
+        border-color: #dedfce;
+        background: linear-gradient(120deg, #f0f2e6, #faf8ef);
+    }
+    .kitchen-title {
+        font-family: Georgia, "Times New Roman", serif;
+        letter-spacing: -0.035em;
+        font-weight: 500;
+    }
+    .workflow-card {
+        @apply bg-white rounded-xl border p-4;
+        border-color: #e5e4d9;
+        box-shadow: 0 2px 5px #33412b04;
+        transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+    }
+    .workflow-card:hover {
+        border-color: #a7b394;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px #33412b08;
+    }
+    .brand-mark {
+        @apply inline-flex items-center justify-center rounded-xl;
+        width: 30px;
+        height: 30px;
+        background: #eaf0df;
+        color: #456849;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    .workflow-card:hover { transform: none; }
+}
+
 @layer utilities {
+    .safe-area-bottom {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
     .line-clamp-2 {
         overflow: hidden;
         display: -webkit-box;

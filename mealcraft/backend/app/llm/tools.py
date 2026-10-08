@@ -1,4 +1,4 @@
-"""Tool use schema definitions for Anthropic API."""
+"""Structured tool schemas adapted to OpenRouter function calls."""
 
 CREATE_WEEKLY_PLAN_TOOL = {
     "name": "create_weekly_plan",
